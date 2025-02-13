@@ -1,4 +1,9 @@
 streamlit
-requests
+request
+os
 pyaudio
-numpy
+wave
+threading
+http.client
+json
+numpy 
