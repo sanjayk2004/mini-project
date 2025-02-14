@@ -15,7 +15,7 @@ CLIENT_SECRET = 'b75e40d1ca0043f5ae836f393aa9f621'
 
 # Function to get access token from Spotify
 def get_spotify_token():
-    client_credentials = f"{82db10b357f04e39bdced6d004526296}:{b75e40d1ca0043f5ae836f393aa9f621}"
+    client_credentials = f"{CLIENT_ID}:{CLIENT_SECRET}"
     client_credentials_b64 = base64.b64encode(client_credentials.encode()).decode()
 
     headers = {
