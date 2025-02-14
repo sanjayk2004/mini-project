@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import os
-import pyaudio
+import sounddevice as sd
 import wave
 import threading
 import http.client
@@ -17,10 +17,9 @@ SHAZAM_API_KEY = "e3c7c2cd8amshc47ae7d373ca8d1p1a78c9jsna8f3a8d2ec7f"
 SHAZAM_API_HOST = "shazam-api6.p.rapidapi.com"
 
 # Audio recording settings
-FORMAT = pyaudio.paInt16
+FORMAT = np.int16  # Use numpy types for audio data
 CHANNELS = 2
 RATE = 44100
-CHUNK = 1024
 RECORD_SECONDS = 5
 OUTPUT_FILENAME = "recorded_audio.wav"
 
@@ -98,25 +97,19 @@ def display_results(results):
         st.error("Error: Music could not be recognized. Please try again.")
 
 def record_audio():
-    """Record audio and save it to a file."""
-    audio = pyaudio.PyAudio()
-    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-    frames = []
-    
+    """Record audio and save it to a file using sounddevice."""
     st.write("Recording...")
-    for _ in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-        data = stream.read(CHUNK)
-        frames.append(data)
     
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
+    # Record audio data from the microphone
+    audio_data = sd.rec(int(RATE * RECORD_SECONDS), samplerate=RATE, channels=CHANNELS, dtype=FORMAT)
+    sd.wait()  # Wait for recording to finish
     
+    # Save the recorded audio to a WAV file
     with wave.open(OUTPUT_FILENAME, 'wb') as wave_file:
         wave_file.setnchannels(CHANNELS)
-        wave_file.setsampwidth(audio.get_sample_size(FORMAT))
+        wave_file.setsampwidth(2)  # 2 bytes per sample for int16 format
         wave_file.setframerate(RATE)
-        wave_file.writeframes(b''.join(frames))
+        wave_file.writeframes(audio_data.tobytes())
     
     st.success(f"Recording saved as {OUTPUT_FILENAME}")
     results = recognize_music_with_shazam(OUTPUT_FILENAME)
