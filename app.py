@@ -1,178 +1,140 @@
 import streamlit as st
 import requests
 import os
-import wave
-import numpy as np
 import base64
-import http.client
 import json
-import tempfile
+import wave
+import pydub
+from pydub import AudioSegment
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 
-# Deezer API Key (replace with your actual API key)
-DEEZER_API_KEY = "ed97f96fa6msh2f690d775cfbf43p1263f5jsnd1ecb8905406"
-DEEZER_API_HOST = "deezerdevs-deezer.p.rapidapi.com"
+# Spotify API credentials
+CLIENT_ID = '82db10b357f04e39bdced6d004526296'
+CLIENT_SECRET = 'b75e40d1ca0043f5ae836f393aa9f621'
 
-# Shazam API Key (via RapidAPI)
-SHAZAM_API_KEY = "e3c7c2cd8amshc47ae7d373ca8d1p1a78c9jsna8f3a8d2ec7f"
-SHAZAM_API_HOST = "shazam-api6.p.rapidapi.com"
+# Function to get access token from Spotify
+def get_spotify_token():
+    client_credentials = f"{82db10b357f04e39bdced6d004526296}:{b75e40d1ca0043f5ae836f393aa9f621}"
+    client_credentials_b64 = base64.b64encode(client_credentials.encode()).decode()
 
-# History to store last 10 recognized songs
-history = []
-
-def recognize_music_with_shazam(file_path):
-    """Send the audio file to Shazam API for music recognition."""
-    url = f"https://{SHAZAM_API_HOST}/songs/detect"
     headers = {
-        "X-RapidAPI-Key": SHAZAM_API_KEY,
-        "X-RapidAPI-Host": SHAZAM_API_HOST,
-        "Content-Type": "application/json"
+        "Authorization": f"Basic {client_credentials_b64}"
     }
+
+    data = {
+        "grant_type": "client_credentials"
+    }
+
+    response = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
     
-    try:
-        with open(file_path, "rb") as file:
-            audio_data = file.read()
-        response = requests.post(url, headers=headers, data=audio_data)
-        response.raise_for_status()  # Raise an error for bad responses
-        response_json = response.json()
-        
-        if "track" in response_json:
-            return response_json["track"]
-        else:
-            st.error("Recognition failed: " + str(response_json))
-            return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error: {e}")
+    if response.status_code == 200:
+        token_info = response.json()
+        return token_info["access_token"]
+    else:
+        st.error("Unable to get access token")
         return None
 
-def fetch_deezer_artist_info(artist_name):
-    """Fetch artist information from Deezer API."""
-    conn = http.client.HTTPSConnection(DEEZER_API_HOST)
+# Function to search for song using Spotify API
+def search_song(song_name, access_token):
+    url = f"https://api.spotify.com/v1/search?q={song_name}&type=track&limit=1"
     headers = {
-        'x-rapidapi-key': DEEZER_API_KEY,
-        'x-rapidapi-host': DEEZER_API_HOST
+        "Authorization": f"Bearer {access_token}"
     }
-    
-    conn.request("GET", f"/search?q={artist_name}", headers=headers)
-    res = conn.getresponse()
-    
-    if res.status == 200:
-        data = res.read()
-        response_json = json.loads(data.decode("utf-8"))
-        if response_json.get("data"):
-            return response_json["data"][0]
-        else:
-            return None
-    return None
 
-def update_history(song, artist):
-    """Update the history list with the latest recognized song."""
-    if len(history) >= 10:
-        history.pop(0)
-    history.append(f"{song} by {artist}")
-
-def display_results(results):
-    """Display music recognition results and recommendations."""
-    if results:
-        song = results.get("title", "Unknown")
-        artist = results.get("subtitle", "Unknown")
-        album = results.get("sections", [{}])[0].get("metadata", [{}])[0].get("text", "Unknown")
-        
-        result_text = f"**Song:** {song}\n**Artist:** {artist}\n**Album:** {album}"
-        
-        artist_info = fetch_deezer_artist_info(artist)
-        if artist_info:
-            deezer_info = f"\n\n**Deezer Info:**\n**Artist:** {artist_info.get('name', 'N/A')}\n**Followers:** {artist_info.get('fans', 'N/A')}"
-            result_text += deezer_info
-        
-        update_history(song, artist)
-        st.success(result_text)
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        data = response.json()
+        track = data["tracks"]["items"][0]
+        return {
+            "name": track["name"],
+            "artist": track["artists"][0]["name"],
+            "album": track["album"]["name"],
+            "url": track["external_urls"]["spotify"]
+        }
     else:
-        st.error("Error: Music could not be recognized. Please try again.")
+        return None
 
-def save_audio(base64_audio_data, file_path="recorded_audio.wav"):
-    """Save base64 audio data to a file."""
-    audio_data = base64.b64decode(base64_audio_data)
-    with open(file_path, "wb") as audio_file:
-        audio_file.write(audio_data)
-    return file_path
+# Function to get recommendations from Spotify API
+def get_recommendations(track_id, access_token):
+    url = f"https://api.spotify.com/v1/recommendations?seed_tracks={track_id}&limit=5"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        data = response.json()
+        recommendations = [
+            {
+                "name": track["name"],
+                "artist": track["artists"][0]["name"],
+                "album": track["album"]["name"],
+                "url": track["external_urls"]["spotify"]
+            }
+            for track in data["tracks"]
+        ]
+        return recommendations
+    else:
+        return None
+
+# Function to handle the audio recording and recognition
+def record_audio():
+    """Record audio and save it to a file."""
+    audio = pydub.AudioSegment.from_file("path_to_audio_file.wav")  # Replace with actual recording code
+    
+    st.write("Recording finished!")
+    audio.export("recorded_audio.wav", format="wav")
+    st.success("Audio saved as recorded_audio.wav")
+    access_token = get_spotify_token()
+    if access_token:
+        track_info = search_song("Shape of You", access_token)  # Replace with song recognition logic
+        if track_info:
+            st.write(track_info)
+            recommendations = get_recommendations(track_info['url'], access_token)
+            if recommendations:
+                st.write("Recommendations:")
+                for rec in recommendations:
+                    st.write(f"{rec['name']} by {rec['artist']}")
+            else:
+                st.write("No recommendations found.")
+        else:
+            st.write("Song not found.")
 
 # Streamlit Layout
-st.title("Music Recognition System")
-st.write("You can either upload an audio file or record your own song.")
+st.title("Music Recognition and Recommendation System")
+st.write("Upload an audio file or record your own to recognize music and get recommendations.")
 
 # Upload audio file
 uploaded_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
 if uploaded_file is not None:
-    # Save the uploaded file
-    file_path = "uploaded_audio.wav"  # You can change the name as needed
-    with open(file_path, "wb") as f:
+    with open("uploaded_audio.wav", "wb") as f:
         f.write(uploaded_file.getbuffer())
-    
-    # Recognize the uploaded audio
-    results = recognize_music_with_shazam(file_path)
-    display_results(results)
+    access_token = get_spotify_token()
+    if access_token:
+        track_info = search_song("Shape of You", access_token)  # Replace with actual song recognition logic
+        if track_info:
+            st.write(track_info)
+            recommendations = get_recommendations(track_info['url'], access_token)
+            if recommendations:
+                st.write("Recommendations:")
+                for rec in recommendations:
+                    st.write(f"{rec['name']} by {rec['artist']}")
+            else:
+                st.write("No recommendations found.")
+        else:
+            st.write("Song not found.")
 
-# HTML and JavaScript code to record audio
-audio_html = """
-    <html>
-    <body>
-    <h2>Record Your Song</h2>
-    <script>
-    var recorder, audio_stream, audio_data = [];
-    function startRecording() {
-        navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream) {
-            audio_stream = stream;
-            recorder = new MediaRecorder(stream);
-            recorder.ondataavailable = function(e) { audio_data.push(e.data); };
-            recorder.onstop = function() {
-                var blob = new Blob(audio_data, { type: 'audio/wav' });
-                var reader = new FileReader();
-                reader.onloadend = function() {
-                    var base64Audio = reader.result.split(',')[1];
-                    window.parent.postMessage(base64Audio, "*");
-                };
-                reader.readAsDataURL(blob);
-            };
-            recorder.start();
-            document.getElementById('status').innerHTML = "Recording...";
-        });
-    }
+# Record audio button
+if st.button("Record Audio"):
+    record_audio()
 
-    function stopRecording() {
-        recorder.stop();
-        audio_stream.getTracks().forEach(track => track.stop());
-        document.getElementById('status').innerHTML = "Recording stopped.";
-    }
-    </script>
-    <button onclick="startRecording()">Start Recording</button>
-    <button onclick="stopRecording()">Stop Recording</button>
-    <p id="status">Recording status will be displayed here.</p>
-    </body>
-    </html>
-"""
-
-# Use st.components.v1 to embed the HTML and JavaScript for recording
-from streamlit.components.v1 import html
-
-# Embed the audio recording HTML/JS
-html(audio_html, height=400)
-
-# Listen for the base64 audio data from the frontend (JavaScript)
-audio_data = st.experimental_get_query_params().get("audio", None)
-if audio_data:
-    file_path = save_audio(audio_data[0])
-    
-    # Provide an option to play back the recorded audio
-    st.audio(file_path, format="audio/wav")  # Add the audio player here
-    
-    results = recognize_music_with_shazam(file_path)
-    display_results(results)
-
-# Show history
+# Show history button
 if st.button("Show History"):
-    if history:
-        st.write("Recognition History:")
-        for entry in history:
-            st.write(entry)
-    else:
-        st.write("No history available.")
+    st.write("Recognition History:")  # Add functionality to display recognition history if needed
+
+# Quit button (not necessary in Streamlit, but can be used to stop the app)
+if st.button("Quit"):
+    st.stop()
