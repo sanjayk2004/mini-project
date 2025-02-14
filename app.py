@@ -87,32 +87,27 @@ def display_results(results):
     else:
         st.error("Error: Music could not be recognized. Please try again.")
 
-def record_audio_with_pydub():
-    """Record audio using pydub and save it to a file."""
-    # Example: Using a prerecorded file instead of actual microphone input
-    # In real-world cases, you would record from a microphone (not shown here)
-    audio = AudioSegment.from_file("path_to_audio_file.wav")  # Modify this for actual audio recording
-    audio.export("recorded_audio.wav", format="wav")
-
-    st.success(f"Recording saved as recorded_audio.wav")
-    results = recognize_music_with_shazam("recorded_audio.wav")
-    display_results(results)
+def record_audio():
+    """Record audio using Streamlit's file uploader."""
+    uploaded_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
+    
+    if uploaded_file is not None:
+        # Save the uploaded file
+        with open("uploaded_audio.wav", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.success(f"Recording saved as uploaded_audio.wav")
+        
+        # Recognize the uploaded audio with Shazam API
+        results = recognize_music_with_shazam("uploaded_audio.wav")
+        display_results(results)
 
 # Streamlit Layout
 st.title("Music Recognition System")
-st.write("Upload an audio file or record your own to recognize music.")
-
-# Upload audio file
-uploaded_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
-if uploaded_file is not None:
-    with open("uploaded_audio.wav", "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    results = recognize_music_with_shazam("uploaded_audio.wav")
-    display_results(results)
+st.write("Upload an audio file to recognize music.")
 
 # Record audio button
 if st.button("Record Audio"):
-    record_audio_with_pydub()
+    record_audio()
 
 # Show history
 if st.button("Show History"):
