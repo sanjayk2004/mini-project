@@ -1,10 +1,9 @@
 import streamlit as st
 import requests
 import os
-from pydub import AudioSegment
-import http.client
-import json
+import wave
 import numpy as np
+import base64
 
 # Deezer API Key (replace with your actual API key)
 DEEZER_API_KEY = "ed97f96fa6msh2f690d775cfbf43p1263f5jsnd1ecb8905406"
@@ -87,27 +86,68 @@ def display_results(results):
     else:
         st.error("Error: Music could not be recognized. Please try again.")
 
-def record_audio():
-    """Record audio using Streamlit's file uploader."""
-    uploaded_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
-    
-    if uploaded_file is not None:
-        # Save the uploaded file
-        with open("uploaded_audio.wav", "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.success(f"Recording saved as uploaded_audio.wav")
-        
-        # Recognize the uploaded audio with Shazam API
-        results = recognize_music_with_shazam("uploaded_audio.wav")
-        display_results(results)
+def save_audio(base64_audio_data, file_path="recorded_audio.wav"):
+    """Save base64 audio data to a file."""
+    audio_data = base64.b64decode(base64_audio_data)
+    with open(file_path, "wb") as audio_file:
+        audio_file.write(audio_data)
+    return file_path
 
 # Streamlit Layout
 st.title("Music Recognition System")
-st.write("Upload an audio file to recognize music.")
+st.write("Record your song using the button below.")
 
-# Record audio button
-if st.button("Record Audio"):
-    record_audio()
+# HTML and JavaScript code to record audio
+audio_html = """
+    <html>
+    <body>
+    <h2>Record Your Song</h2>
+    <script>
+    var recorder, audio_stream, audio_data = [];
+    function startRecording() {
+        navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream) {
+            audio_stream = stream;
+            recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = function(e) { audio_data.push(e.data); };
+            recorder.onstop = function() {
+                var blob = new Blob(audio_data, { type: 'audio/wav' });
+                var reader = new FileReader();
+                reader.onloadend = function() {
+                    var base64Audio = reader.result.split(',')[1];
+                    window.parent.postMessage(base64Audio, "*");
+                };
+                reader.readAsDataURL(blob);
+            };
+            recorder.start();
+            document.getElementById('status').innerHTML = "Recording...";
+        });
+    }
+
+    function stopRecording() {
+        recorder.stop();
+        audio_stream.getTracks().forEach(track => track.stop());
+        document.getElementById('status').innerHTML = "Recording stopped.";
+    }
+    </script>
+    <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
+    <p id="status">Recording status will be displayed here.</p>
+    </body>
+    </html>
+"""
+
+# Use st.components.v1 to embed the HTML and JavaScript for recording
+from streamlit.components.v1 import html
+
+# Embed the audio recording HTML/JS
+html(audio_html, height=400)
+
+# Listen for the base64 audio data from the frontend (JavaScript)
+audio_data = st.experimental_get_query_params().get("audio", None)
+if audio_data:
+    file_path = save_audio(audio_data[0])
+    results = recognize_music_with_shazam(file_path)
+    display_results(results)
 
 # Show history
 if st.button("Show History"):
@@ -117,7 +157,3 @@ if st.button("Show History"):
             st.write(entry)
     else:
         st.write("No history available.")
-
-# Quit button (not necessary in Streamlit, but can be used to stop the app)
-if st.button("Quit"):
-    st.stop()
