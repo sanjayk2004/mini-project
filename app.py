@@ -6,6 +6,7 @@ import numpy as np
 import base64
 import http.client
 import json
+import tempfile
 
 # Deezer API Key (replace with your actual API key)
 DEEZER_API_KEY = "ed97f96fa6msh2f690d775cfbf43p1263f5jsnd1ecb8905406"
@@ -160,6 +161,10 @@ html(audio_html, height=400)
 audio_data = st.experimental_get_query_params().get("audio", None)
 if audio_data:
     file_path = save_audio(audio_data[0])
+    
+    # Provide an option to play back the recorded audio
+    st.audio(file_path, format="audio/wav")  # Add the audio player here
+    
     results = recognize_music_with_shazam(file_path)
     display_results(results)
 
