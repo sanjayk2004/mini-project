@@ -4,6 +4,8 @@ import os
 import wave
 import numpy as np
 import base64
+import http.client
+import json
 
 # Deezer API Key (replace with your actual API key)
 DEEZER_API_KEY = "ed97f96fa6msh2f690d775cfbf43p1263f5jsnd1ecb8905406"
@@ -95,7 +97,19 @@ def save_audio(base64_audio_data, file_path="recorded_audio.wav"):
 
 # Streamlit Layout
 st.title("Music Recognition System")
-st.write("Record your song using the button below.")
+st.write("You can either upload an audio file or record your own song.")
+
+# Upload audio file
+uploaded_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
+if uploaded_file is not None:
+    # Save the uploaded file
+    file_path = "uploaded_audio.wav"  # You can change the name as needed
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    
+    # Recognize the uploaded audio
+    results = recognize_music_with_shazam(file_path)
+    display_results(results)
 
 # HTML and JavaScript code to record audio
 audio_html = """
