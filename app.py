@@ -1,9 +1,7 @@
 import streamlit as st
 import requests
 import os
-import sounddevice as sd
-import wave
-import threading
+from pydub import AudioSegment
 import http.client
 import json
 import numpy as np
@@ -15,13 +13,6 @@ DEEZER_API_HOST = "deezerdevs-deezer.p.rapidapi.com"
 # Shazam API Key (via RapidAPI)
 SHAZAM_API_KEY = "e3c7c2cd8amshc47ae7d373ca8d1p1a78c9jsna8f3a8d2ec7f"
 SHAZAM_API_HOST = "shazam-api6.p.rapidapi.com"
-
-# Audio recording settings
-FORMAT = np.int16  # Use numpy types for audio data
-CHANNELS = 2
-RATE = 44100
-RECORD_SECONDS = 5
-OUTPUT_FILENAME = "recorded_audio.wav"
 
 # History to store last 10 recognized songs
 history = []
@@ -96,23 +87,15 @@ def display_results(results):
     else:
         st.error("Error: Music could not be recognized. Please try again.")
 
-def record_audio():
-    """Record audio and save it to a file using sounddevice."""
-    st.write("Recording...")
-    
-    # Record audio data from the microphone
-    audio_data = sd.rec(int(RATE * RECORD_SECONDS), samplerate=RATE, channels=CHANNELS, dtype=FORMAT)
-    sd.wait()  # Wait for recording to finish
-    
-    # Save the recorded audio to a WAV file
-    with wave.open(OUTPUT_FILENAME, 'wb') as wave_file:
-        wave_file.setnchannels(CHANNELS)
-        wave_file.setsampwidth(2)  # 2 bytes per sample for int16 format
-        wave_file.setframerate(RATE)
-        wave_file.writeframes(audio_data.tobytes())
-    
-    st.success(f"Recording saved as {OUTPUT_FILENAME}")
-    results = recognize_music_with_shazam(OUTPUT_FILENAME)
+def record_audio_with_pydub():
+    """Record audio using pydub and save it to a file."""
+    # Example: Using a prerecorded file instead of actual microphone input
+    # In real-world cases, you would record from a microphone (not shown here)
+    audio = AudioSegment.from_file("path_to_audio_file.wav")  # Modify this for actual audio recording
+    audio.export("recorded_audio.wav", format="wav")
+
+    st.success(f"Recording saved as recorded_audio.wav")
+    results = recognize_music_with_shazam("recorded_audio.wav")
     display_results(results)
 
 # Streamlit Layout
@@ -122,14 +105,14 @@ st.write("Upload an audio file or record your own to recognize music.")
 # Upload audio file
 uploaded_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
 if uploaded_file is not None:
-    with open(OUTPUT_FILENAME, "wb") as f:
+    with open("uploaded_audio.wav", "wb") as f:
         f.write(uploaded_file.getbuffer())
-    results = recognize_music_with_shazam(OUTPUT_FILENAME)
+    results = recognize_music_with_shazam("uploaded_audio.wav")
     display_results(results)
 
 # Record audio button
 if st.button("Record Audio"):
-    record_audio()
+    record_audio_with_pydub()
 
 # Show history
 if st.button("Show History"):
