@@ -1,9 +1,5 @@
 streamlit
-request
-os
+requests
 pyaudio
 wave
-threading
-http.client
-json
-numpy 
+numpy
