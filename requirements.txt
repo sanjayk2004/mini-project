@@ -1,6 +1,5 @@
-streamlit
-requests
-sounddevice
-wavio
-numpy
-wave
+streamlit==1.18.0
+requests==2.28.2
+sounddevice==0.4.6
+numpy==1.24.0
+httpclient==3.2
