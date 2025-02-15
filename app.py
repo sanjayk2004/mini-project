@@ -1,140 +1,85 @@
 import streamlit as st
-import requests
-import os
-import base64
-import json
+import sounddevice as sd
+import numpy as np
 import wave
-import pydub
-from pydub import AudioSegment
+import soundfile as sf
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
-# Spotify API credentials
-CLIENT_ID = '82db10b357f04e39bdced6d004526296'
-CLIENT_SECRET = 'b75e40d1ca0043f5ae836f393aa9f621'
+# Set up Spotify API
+SPOTIFY_CLIENT_ID = "82db10b357f04e39bdced6d004526296"
+SPOTIFY_CLIENT_SECRET = "b75e40d1ca0043f5ae836f393aa9f621"
 
-# Function to get access token from Spotify
-def get_spotify_token():
-    client_credentials = f"{CLIENT_ID}:{CLIENT_SECRET}"
-    client_credentials_b64 = base64.b64encode(client_credentials.encode()).decode()
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID,
+                                                           client_secret=SPOTIFY_CLIENT_SECRET))
 
-    headers = {
-        "Authorization": f"Basic {client_credentials_b64}"
-    }
-
-    data = {
-        "grant_type": "client_credentials"
-    }
-
-    response = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
-    
-    if response.status_code == 200:
-        token_info = response.json()
-        return token_info["access_token"]
-    else:
-        st.error("Unable to get access token")
-        return None
-
-# Function to search for song using Spotify API
-def search_song(song_name, access_token):
-    url = f"https://api.spotify.com/v1/search?q={song_name}&type=track&limit=1"
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code == 200:
-        data = response.json()
-        track = data["tracks"]["items"][0]
-        return {
-            "name": track["name"],
-            "artist": track["artists"][0]["name"],
-            "album": track["album"]["name"],
-            "url": track["external_urls"]["spotify"]
-        }
-    else:
-        return None
-
-# Function to get recommendations from Spotify API
-def get_recommendations(track_id, access_token):
-    url = f"https://api.spotify.com/v1/recommendations?seed_tracks={track_id}&limit=5"
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code == 200:
-        data = response.json()
-        recommendations = [
-            {
-                "name": track["name"],
-                "artist": track["artists"][0]["name"],
-                "album": track["album"]["name"],
-                "url": track["external_urls"]["spotify"]
-            }
-            for track in data["tracks"]
-        ]
-        return recommendations
-    else:
-        return None
-
-# Function to handle the audio recording and recognition
+# Function to record audio
 def record_audio():
     """Record audio and save it to a file."""
-    audio = pydub.AudioSegment.from_file("path_to_audio_file.wav")  # Replace with actual recording code
-    
-    st.write("Recording finished!")
-    audio.export("recorded_audio.wav", format="wav")
-    st.success("Audio saved as recorded_audio.wav")
-    access_token = get_spotify_token()
-    if access_token:
-        track_info = search_song("Shape of You", access_token)  # Replace with song recognition logic
-        if track_info:
-            st.write(track_info)
-            recommendations = get_recommendations(track_info['url'], access_token)
-            if recommendations:
-                st.write("Recommendations:")
-                for rec in recommendations:
-                    st.write(f"{rec['name']} by {rec['artist']}")
-            else:
-                st.write("No recommendations found.")
-        else:
-            st.write("Song not found.")
+    duration = 5  # Record for 5 seconds
+    sample_rate = 44100  # Sampling rate
+    st.write("🎤 Recording... Speak now!")
 
-# Streamlit Layout
-st.title("Music Recognition and Recommendation System")
-st.write("Upload an audio file or record your own to recognize music and get recommendations.")
+    # Record the audio
+    recording = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=2, dtype=np.int16)
+    sd.wait()  # Wait for recording to finish
 
-# Upload audio file
-uploaded_file = st.file_uploader("Upload Audio File", type=["wav", "mp3", "m4a"])
-if uploaded_file is not None:
-    with open("uploaded_audio.wav", "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    access_token = get_spotify_token()
-    if access_token:
-        track_info = search_song("Shape of You", access_token)  # Replace with actual song recognition logic
-        if track_info:
-            st.write(track_info)
-            recommendations = get_recommendations(track_info['url'], access_token)
-            if recommendations:
-                st.write("Recommendations:")
-                for rec in recommendations:
-                    st.write(f"{rec['name']} by {rec['artist']}")
-            else:
-                st.write("No recommendations found.")
-        else:
-            st.write("Song not found.")
+    # Save as WAV file
+    filename = "recorded_audio.wav"
+    with wave.open(filename, "wb") as wf:
+        wf.setnchannels(2)
+        wf.setsampwidth(2)  # 16-bit audio
+        wf.setframerate(sample_rate)
+        wf.writeframes(recording.tobytes())
 
-# Record audio button
+    st.write("✅ Recording finished! Saved as", filename)
+    return filename
+
+# Function to load and play audio
+def load_audio(file_path):
+    """Load an audio file."""
+    data, samplerate = sf.read(file_path)
+    return data, samplerate
+
+# Function to search for a song on Spotify
+def search_song_on_spotify(song_name):
+    """Search for a song on Spotify using the API."""
+    results = sp.search(q=song_name, type="track", limit=1)
+    if results["tracks"]["items"]:
+        track = results["tracks"]["items"][0]
+        track_name = track["name"]
+        artist = track["artists"][0]["name"]
+        spotify_url = track["external_urls"]["spotify"]
+        return f"🎵 Found: {track_name} by {artist}\n🔗 [Listen on Spotify]({spotify_url})"
+    else:
+        return "❌ No match found on Spotify."
+
+# Streamlit UI
+st.title("🎶 Music Recognition & Recommendation System")
+
+# Record Audio Button
 if st.button("Record Audio"):
-    record_audio()
+    recorded_file = record_audio()
+    if recorded_file:
+        st.audio(recorded_file, format="audio/wav")
 
-# Show history button
-if st.button("Show History"):
-    st.write("Recognition History:")  # Add functionality to display recognition history if needed
+# Upload Audio File
+uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3"])
+if uploaded_file:
+    file_path = f"uploaded_audio.wav"
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.read())
+    st.write("✅ File uploaded successfully!")
+    st.audio(file_path, format="audio/wav")
 
-# Quit button (not necessary in Streamlit, but can be used to stop the app)
-if st.button("Quit"):
-    st.stop()
+# Play Audio Button
+if st.button("Play Recorded Audio"):
+    audio_data, sr = load_audio("recorded_audio.wav")
+    st.audio("recorded_audio.wav", format="audio/wav")
+    st.write(f"📢 Playing at {sr} Hz")
+
+# Search a Song on Spotify
+song_name = st.text_input("Enter a song name to search on Spotify")
+if st.button("Search"):
+    result = search_song_on_spotify(song_name)
+    st.markdown(result)
