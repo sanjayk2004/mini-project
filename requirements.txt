@@ -1,5 +1,6 @@
 streamlit
-requests
-pydub
+sounddevice
 numpy
+wave
+soundfile
 spotipy
