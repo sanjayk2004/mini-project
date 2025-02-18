@@ -25,7 +25,7 @@ def record_audio():
     sd.wait()  # Wait for recording to finish
 
     # Save as WAV file
-    filename = "recorded_audio.wav"
+    filename = "./recorded_audio.wav"
     with wave.open(filename, "wb") as wf:
         wf.setnchannels(2)
         wf.setsampwidth(2)  # 16-bit audio
@@ -66,7 +66,7 @@ if st.button("Record Audio"):
 # Upload Audio File
 uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3"])
 if uploaded_file:
-    file_path = f"uploaded_audio.wav"
+    file_path = f"./{uploaded_file.name}"  # Use the actual name of the file
     with open(file_path, "wb") as f:
         f.write(uploaded_file.read())
     st.write("✅ File uploaded successfully!")
@@ -74,8 +74,9 @@ if uploaded_file:
 
 # Play Audio Button
 if st.button("Play Recorded Audio"):
-    audio_data, sr = load_audio("recorded_audio.wav")
-    st.audio("recorded_audio.wav", format="audio/wav")
+    file_to_play = "recorded_audio.wav" if not uploaded_file else uploaded_file.name
+    audio_data, sr = load_audio(file_to_play)
+    st.audio(file_to_play, format="audio/wav")
     st.write(f"📢 Playing at {sr} Hz")
 
 # Search a Song on Spotify
