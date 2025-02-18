@@ -1,4 +1,4 @@
-portaudio
+
 streamlit
 sounddevice
 numpy
