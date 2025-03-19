@@ -67,8 +67,24 @@ if st.button("Get Recommendations"):
 
     # Add language as a genre (Spotify doesn't support language directly)
     if language:
-        # Split multiple languages into a list
-        seed_genres.extend([l.strip().lower() for l in language.split(",")])
+        # Map languages to valid Spotify genres
+        language_to_genre = {
+            "english": "pop",
+            "hindi": "bollywood",
+            "tamil": "tamil",
+            "spanish": "latin",
+            "korean": "k-pop"
+        }
+        for lang in language.split(","):
+            lang = lang.strip().lower()
+            if lang in language_to_genre:
+                seed_genres.append(language_to_genre[lang])
+            else:
+                st.write(f"⚠️ Language '{lang}' is not supported. Using default genres instead.")
+
+    # Ensure seed_genres is a list
+    if not seed_genres:
+        seed_genres = []
 
     # Get recommendations
     if seed_artists or seed_genres:
