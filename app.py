@@ -1,6 +1,7 @@
 import streamlit as st
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+import requests
 
 # Set up Spotify API
 SPOTIFY_CLIENT_ID = "82db10b357f04e39bdced6d004526296"
@@ -14,12 +15,16 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
 # Function to get Spotify recommendations
 def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
     """Get song recommendations from Spotify."""
-    recommendations = sp.recommendations(
-        seed_artists=seed_artists,
-        seed_genres=seed_genres,
-        limit=limit
-    )
-    return recommendations["tracks"]
+    try:
+        recommendations = sp.recommendations(
+            seed_artists=seed_artists,
+            seed_genres=seed_genres,
+            limit=limit
+        )
+        return recommendations["tracks"]
+    except spotipy.exceptions.SpotifyException as e:
+        st.write(f"❌ Spotify API Error: {e}")
+        return None
 
 # Streamlit UI
 st.title("🎶 Music Recommendation System")
@@ -53,10 +58,11 @@ if st.button("Get Recommendations"):
 
     # Get recommendations
     if seed_artists or seed_genres:
-        st.write("🎧 Recommended Songs:")
         recommendations = get_spotify_recommendations(seed_artists=seed_artists, seed_genres=seed_genres)
-        for track in recommendations:
-            st.write(f"- **{track['name']}** by **{track['artists'][0]['name']}**")
-            st.write(f"🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
+        if recommendations:
+            st.write("🎧 Recommended Songs:")
+            for track in recommendations:
+                st.write(f"- **{track['name']}** by **{track['artists'][0]['name']}**")
+                st.write(f"🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
     else:
         st.write("❌ Please provide at least an artist name or genre.")
