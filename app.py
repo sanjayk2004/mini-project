@@ -1,7 +1,6 @@
 import streamlit as st
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
-import requests
 
 # Set up Spotify API
 SPOTIFY_CLIENT_ID = "82db10b357f04e39bdced6d004526296"
@@ -16,6 +15,10 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
 def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
     """Get song recommendations from Spotify."""
     try:
+        # Debug: Print seed values
+        st.write(f"🔍 Seed Artists: {seed_artists}")
+        st.write(f"🔍 Seed Genres: {seed_genres}")
+
         recommendations = sp.recommendations(
             seed_artists=seed_artists,
             seed_genres=seed_genres,
@@ -66,3 +69,4 @@ if st.button("Get Recommendations"):
                 st.write(f"🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
     else:
         st.write("❌ Please provide at least an artist name or genre.")
+        
