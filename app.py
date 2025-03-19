@@ -14,7 +14,7 @@ def get_spotify_token(client_id, client_secret):
     auth_response = requests.post(
         auth_url,
         data={"grant_type": "client_credentials"},
-        auth=(client_id, client_secret)
+        auth=(client_id, client_secret))
     if auth_response.status_code == 200:
         return auth_response.json()["access_token"]
     else:
