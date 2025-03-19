@@ -3,4 +3,4 @@ spotipy
 numpy
 soundfile
 pydub
-ffmpeg
+ffmpeg-python
