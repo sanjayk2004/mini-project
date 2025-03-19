@@ -20,9 +20,13 @@ def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
         st.write(f"🔍 Seed Genres: {seed_genres}")
 
         # Ensure at least 5 seeds are provided
-        if (len(seed_artists or []) + len(seed_genres or [])) < 5:
-            st.write("⚠️ Please provide at least 5 seeds (combined from artist and genre).")
-            return None
+        total_seeds = len(seed_artists or []) + len(seed_genres or [])
+        if total_seeds < 5:
+            st.write(f"⚠️ Adding default seeds to meet the requirement (you provided {total_seeds}).")
+
+            # Add default genres if needed
+            default_genres = ["pop", "rock", "classical", "jazz", "electronic"]
+            seed_genres.extend(default_genres[:5 - total_seeds])
 
         recommendations = sp.recommendations(
             seed_artists=seed_artists,
@@ -58,11 +62,13 @@ if st.button("Get Recommendations"):
 
     # Add genre if provided
     if genre:
-        seed_genres = [genre.strip().lower()]
+        # Split multiple genres into a list
+        seed_genres = [g.strip().lower() for g in genre.split(",")]
 
     # Add language as a genre (Spotify doesn't support language directly)
     if language:
-        seed_genres.append(language.strip().lower())
+        # Split multiple languages into a list
+        seed_genres.extend([l.strip().lower() for l in language.split(",")])
 
     # Get recommendations
     if seed_artists or seed_genres:
