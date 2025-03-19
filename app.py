@@ -19,6 +19,11 @@ def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
         st.write(f"🔍 Seed Artists: {seed_artists}")
         st.write(f"🔍 Seed Genres: {seed_genres}")
 
+        # Ensure at least 5 seeds are provided
+        if (len(seed_artists or []) + len(seed_genres or [])) < 5:
+            st.write("⚠️ Please provide at least 5 seeds (combined from artist and genre).")
+            return None
+
         recommendations = sp.recommendations(
             seed_artists=seed_artists,
             seed_genres=seed_genres,
@@ -69,4 +74,3 @@ if st.button("Get Recommendations"):
                 st.write(f"🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
     else:
         st.write("❌ Please provide at least an artist name or genre.")
-        
