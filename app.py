@@ -3,13 +3,15 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
 # Set up Spotify API
-SPOTIFY_CLIENT_ID = "3bab3dd2fd2343eea860292ecca7d41f"
-SPOTIFY_CLIENT_SECRET = "671ad3eb396041d28f043f8d8f0c63ac"
+SPOTIFY_CLIENT_ID = "82db10b357f04e39bdced6d004526296"
+SPOTIFY_CLIENT_SECRET = "b75e40d1ca0043f5ae836f393aa9f621"
 
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+# Authenticate with Spotify
+auth_manager = SpotifyClientCredentials(
     client_id=SPOTIFY_CLIENT_ID,
     client_secret=SPOTIFY_CLIENT_SECRET
-))
+)
+sp = spotipy.Spotify(auth_manager=auth_manager)
 
 # Function to get Spotify recommendations
 def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
@@ -27,6 +29,10 @@ def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
             # Add default genres if needed
             default_genres = ["pop", "rock", "classical", "jazz", "electronic"]
             seed_genres.extend(default_genres[:5 - total_seeds])
+
+        # Ensure seed_artists and seed_genres are not None
+        seed_artists = seed_artists or []
+        seed_genres = seed_genres or []
 
         recommendations = sp.recommendations(
             seed_artists=seed_artists,
@@ -62,8 +68,8 @@ if st.button("Get Recommendations"):
 
     # Add genre if provided
     if genre:
-        # Split multiple genres into a list
-        seed_genres = [g.strip().lower() for g in genre.split(",")]
+        # Split multiple genres into a list and remove extra quotes
+        seed_genres = [g.strip().lower().replace("'", "") for g in genre.split(",")]
 
     # Add language as a genre (Spotify doesn't support language directly)
     if language:
@@ -71,12 +77,22 @@ if st.button("Get Recommendations"):
         language_to_genre = {
             "english": "pop",
             "hindi": "bollywood",
-            "tamil": "tamil",
+            "tamil": "world",
+            "malayalam": "world",
             "spanish": "latin",
-            "korean": "k-pop"
+            "korean": "k-pop",
+            "french": "french",
+            "german": "german",
+            "japanese": "j-pop",
+            "chinese": "mandopop",
+            "arabic": "arabic",
+            "italian": "italian",
+            "portuguese": "samba",
+            "russian": "russian",
+            "turkish": "turkish"
         }
         for lang in language.split(","):
-            lang = lang.strip().lower()
+            lang = lang.strip().lower().replace("'", "")
             if lang in language_to_genre:
                 seed_genres.append(language_to_genre[lang])
             else:
