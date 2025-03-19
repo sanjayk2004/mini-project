@@ -10,8 +10,10 @@ from spotipy.oauth2 import SpotifyClientCredentials
 SPOTIFY_CLIENT_ID = "82db10b357f04e39bdced6d004526296"
 SPOTIFY_CLIENT_SECRET = "b75e40d1ca0043f5ae836f393aa9f621"
 
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID,
-                                                           client_secret=SPOTIFY_CLIENT_SECRET))
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+    client_id=SPOTIFY_CLIENT_ID,
+    client_secret=SPOTIFY_CLIENT_SECRET
+))
 
 # Function to record audio
 def record_audio():
@@ -50,9 +52,16 @@ def search_song_on_spotify(song_name):
         track_name = track["name"]
         artist = track["artists"][0]["name"]
         spotify_url = track["external_urls"]["spotify"]
-        return f"🎵 Found: {track_name} by {artist}\n🔗 [Listen on Spotify]({spotify_url})"
+        track_id = track["id"]
+        return track_name, artist, spotify_url, track_id
     else:
-        return "❌ No match found on Spotify."
+        return None, None, None, None
+
+# Function to get Spotify recommendations
+def get_spotify_recommendations(seed_tracks, limit=5):
+    """Get song recommendations from Spotify."""
+    recommendations = sp.recommendations(seed_tracks=seed_tracks, limit=limit)
+    return recommendations["tracks"]
 
 # Streamlit UI
 st.title("🎶 Music Recognition & Recommendation System")
@@ -82,5 +91,16 @@ if st.button("Play Recorded Audio"):
 # Search a Song on Spotify
 song_name = st.text_input("Enter a song name to search on Spotify")
 if st.button("Search"):
-    result = search_song_on_spotify(song_name)
-    st.markdown(result)
+    track_name, artist, spotify_url, track_id = search_song_on_spotify(song_name)
+    if track_name:
+        st.write(f"🎵 Found: {track_name} by {artist}")
+        st.write(f"🔗 [Listen on Spotify]({spotify_url})")
+
+        # Get Spotify recommendations
+        st.write("🎧 Recommended Songs:")
+        recommendations = get_spotify_recommendations(seed_tracks=[track_id])
+        for track in recommendations:
+            st.write(f"- {track['name']} by {track['artists'][0]['name']}")
+            st.write(f"🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
+    else:
+        st.write("❌ No match found on Spotify.")
