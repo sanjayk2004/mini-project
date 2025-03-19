@@ -1,6 +1,6 @@
 streamlit
 spotipy
-sounddevice
-soundfile
 numpy
-wave
+soundfile
+pydub
+ffmpeg
