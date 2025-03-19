@@ -1,17 +1,28 @@
 import streamlit as st
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+import requests
 
 # Set up Spotify API
-SPOTIFY_CLIENT_ID = "82db10b357f04e39bdced6d004526296"
-SPOTIFY_CLIENT_SECRET = "b75e40d1ca0043f5ae836f393aa9f621"
+SPOTIFY_CLIENT_ID = "3bab3dd2fd2343eea860292ecca7d41f"
+SPOTIFY_CLIENT_SECRET = "671ad3eb396041d28f043f8d8f0c63ac"
 
-# Authenticate with Spotify
-auth_manager = SpotifyClientCredentials(
-    client_id=SPOTIFY_CLIENT_ID,
-    client_secret=SPOTIFY_CLIENT_SECRET
-)
-sp = spotipy.Spotify(auth_manager=auth_manager)
+# Function to get Spotify access token
+def get_spotify_token(client_id, client_secret):
+    """Get an access token from Spotify."""
+    auth_url = "https://accounts.spotify.com/api/token"
+    auth_response = requests.post(
+        auth_url,
+        data={"grant_type": "client_credentials"},
+        auth=(client_id, client_secret)
+    if auth_response.status_code == 200:
+        return auth_response.json()["access_token"]
+    else:
+        st.error("❌ Failed to get Spotify access token. Check your credentials.")
+        return None
+
+# Get Spotify access token
+access_token = get_spotify_token(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
 
 # Function to get Spotify recommendations
 def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
@@ -34,14 +45,26 @@ def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
         seed_artists = seed_artists or []
         seed_genres = seed_genres or []
 
-        recommendations = sp.recommendations(
-            seed_artists=seed_artists,
-            seed_genres=seed_genres,
-            limit=limit
+        # Make the API request
+        headers = {"Authorization": f"Bearer {access_token}"}
+        params = {
+            "seed_artists": ",".join(seed_artists),
+            "seed_genres": ",".join(seed_genres),
+            "limit": limit
+        }
+        response = requests.get(
+            "https://api.spotify.com/v1/recommendations",
+            headers=headers,
+            params=params
         )
-        return recommendations["tracks"]
-    except spotipy.exceptions.SpotifyException as e:
-        st.write(f"❌ Spotify API Error: {e}")
+
+        if response.status_code == 200:
+            return response.json()["tracks"]
+        else:
+            st.error(f"❌ Spotify API Error: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        st.error(f"❌ An error occurred: {e}")
         return None
 
 # Streamlit UI
@@ -59,12 +82,20 @@ if st.button("Get Recommendations"):
     seed_genres = []
 
     # Get artist ID if artist name is provided
-    if artist_name:
-        results = sp.search(q=f"artist:{artist_name}", type="artist", limit=1)
-        if results["artists"]["items"]:
-            seed_artists = [results["artists"]["items"][0]["id"]]
+    if artist_name and access_token:
+        search_url = "https://api.spotify.com/v1/search"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        params = {"q": f"artist:{artist_name}", "type": "artist", "limit": 1}
+        response = requests.get(search_url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            results = response.json()
+            if results["artists"]["items"]:
+                seed_artists = [results["artists"]["items"][0]["id"]]
+            else:
+                st.write(f"❌ No artist found with the name '{artist_name}'.")
         else:
-            st.write(f"❌ No artist found with the name '{artist_name}'.")
+            st.error(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
 
     # Add genre if provided
     if genre:
