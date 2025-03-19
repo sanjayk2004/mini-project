@@ -1,6 +1,3 @@
 streamlit
 spotipy
 numpy
-soundfile
-pydub
-ffmpeg-python
