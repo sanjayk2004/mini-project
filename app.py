@@ -44,12 +44,30 @@ def refresh_token_if_needed(token_data, client_id, client_secret):
 
 # Function to get valid genres from Spotify
 def get_valid_genres(access_token):
+    url = "https://api.spotify.com/v1/recommendations/available-genre-seeds"
     headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get("https://api.spotify.com/v1/recommendations/available-genre-seeds", headers=headers)
-    if response.status_code == 200:
-        return response.json()["genres"]
-    else:
-        st.error(f"❌ Failed to fetch valid genres: {response.status_code} - {response.text}")
+    try:
+        # Debugging: Print the access token
+        st.write(f"🔑 Access Token: {access_token}")
+
+        # Make the GET request
+        response = requests.get(url, headers=headers)
+
+        # Debugging: Print the response
+        st.write(f"🔍 Genre Seeds Response Status Code: {response.status_code}")
+        st.write(f"🔍 Genre Seeds Response Body: {response.text}")
+
+        if response.status_code == 200:
+            return response.json()["genres"]
+        else:
+            st.error(f"❌ Failed to fetch valid genres: {response.status_code} - {response.text}")
+            st.write("⚠️ Using default genres instead.")
+            return [
+                "pop", "rock", "classical", "jazz", "electronic",
+                "hip-hop", "country", "blues", "reggae", "world"
+            ]
+    except Exception as e:
+        st.error(f"❌ An error occurred while fetching valid genres: {e}")
         return []
 
 # Function to get Spotify recommendations
@@ -65,6 +83,10 @@ def get_spotify_recommendations(access_token, seed_artists=None, seed_genres=Non
         seed_artists = seed_artists or []
         seed_genres = seed_genres or []
 
+        # Debugging: Print seeds
+        st.write(f"🔍 Seed Artists: {seed_artists}")
+        st.write(f"🔍 Seed Genres: {seed_genres}")
+
         # Make the API request
         headers = {"Authorization": f"Bearer {access_token}"}
         params = {
@@ -72,11 +94,19 @@ def get_spotify_recommendations(access_token, seed_artists=None, seed_genres=Non
             "seed_genres": ",".join(seed_genres),
             "limit": limit
         }
+
+        # Debugging: Print the final URL
+        st.write(f"🔍 Final Recommendations URL: https://api.spotify.com/v1/recommendations?{requests.compat.urlencode(params)}")
+
         response = requests.get(
             "https://api.spotify.com/v1/recommendations",
             headers=headers,
             params=params
         )
+
+        # Debugging: Print the response
+        st.write(f"🎵 Response Status Code: {response.status_code}")
+        st.write(f"🎵 Response Body: {response.text}")
 
         if response.status_code == 200:
             return response.json()["tracks"]
