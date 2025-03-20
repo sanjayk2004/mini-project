@@ -8,13 +8,13 @@ SPOTIFY_CLIENT_SECRET = "671ad3eb396041d28f043f8d8f0c63ac"
 
 # Function to get Spotify access token
 def get_spotify_token(client_id, client_secret):
-    auth_url = "https://accounts.spotify.com/api/token"  # Correct authorization URL
+    auth_url = "https://accounts.spotify.com/api/token"
     try:
         # Make the POST request to get the access token
         auth_response = requests.post(
             auth_url,
-            data={"grant_type": "client_credentials"},  # Required parameter
-            auth=(client_id, client_secret)  # Basic Authentication
+            data={"grant_type": "client_credentials"},
+            auth=(client_id, client_secret)
         )
 
         # Check if the request was successful
@@ -46,29 +46,23 @@ def refresh_token_if_needed(token_data, client_id, client_secret):
 def get_valid_genres(access_token):
     url = "https://api.spotify.com/v1/recommendations/available-genre-seeds"
     headers = {"Authorization": f"Bearer {access_token}"}
+    default_genres = [
+        "pop", "rock", "classical", "jazz", "electronic",
+        "hip-hop", "country", "blues", "reggae", "world"
+    ]
     try:
-        # Debugging: Print the access token
-        st.write(f"🔑 Access Token: {access_token}")
-
         # Make the GET request
         response = requests.get(url, headers=headers)
-
-        # Debugging: Print the response
-        st.write(f"🔍 Genre Seeds Response Status Code: {response.status_code}")
-        st.write(f"🔍 Genre Seeds Response Body: {response.text}")
 
         if response.status_code == 200:
             return response.json()["genres"]
         else:
             st.error(f"❌ Failed to fetch valid genres: {response.status_code} - {response.text}")
             st.write("⚠️ Using default genres instead.")
-            return [
-                "pop", "rock", "classical", "jazz", "electronic",
-                "hip-hop", "country", "blues", "reggae", "world"
-            ]
+            return default_genres
     except Exception as e:
         st.error(f"❌ An error occurred while fetching valid genres: {e}")
-        return []
+        return default_genres
 
 # Function to get Spotify recommendations
 def get_spotify_recommendations(access_token, seed_artists=None, seed_genres=None, limit=10):
@@ -82,6 +76,9 @@ def get_spotify_recommendations(access_token, seed_artists=None, seed_genres=Non
         # Ensure seed_artists and seed_genres are not None
         seed_artists = seed_artists or []
         seed_genres = seed_genres or []
+
+        # Remove duplicates from seed_genres
+        seed_genres = list(set(seed_genres))
 
         # Debugging: Print seeds
         st.write(f"🔍 Seed Artists: {seed_artists}")
