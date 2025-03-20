@@ -1,45 +1,65 @@
-import streamlit as st
 import requests
 
-# Spotify API access token
-access_token = "BQCVSDkFUDB3PenbS9PUAh8K9ZNKc88JZiLajVWRQoZXFTTVJ3XBwKgQYdSbeHeiq4wCqVEnPMRTtIwjnrWUiwwhkIp_zrzx2z78gMvuLH2Fcg8m2yLVRlxfyabXasGDbP9VJpduKRs"
+# Your valid access token
+access_token = "BQAtdNqKlvAofq-nD_3LYVhCiQ1LUX9qNUeJgujV5v8gqbSuxV0LONHmJW5FCFg_BdpgsvK0wAQqFLbwicwlHS5caUayfjMd2ZXG_sZ8CIr9x2XCvK3zPZnIpLKGMk7acETMaIsoouE"
 
-# Search for an artist
-def search_artist(artist_name, access_token):
+# Function to search for an artist and return their ID
+def get_artist_id(artist_name, access_token):
     search_url = "https://api.spotify.com/v1/search"
     headers = {"Authorization": f"Bearer {access_token}"}
     params = {"q": f"artist:{artist_name}", "type": "artist", "limit": 1}
 
     try:
-        # Debugging: Print the headers
-        st.write(f"🔍 Headers: {headers}")
-
         response = requests.get(search_url, headers=headers, params=params)
 
         if response.status_code == 200:
-            return response.json()
+            results = response.json()
+            if results["artists"]["items"]:
+                artist_id = results["artists"]["items"][0]["id"]
+                print(f"✅ Found artist: {results['artists']['items'][0]['name']} (ID: {artist_id})")
+                return artist_id
+            else:
+                print(f"❌ No artist found with the name '{artist_name}'.")
+                return None
         else:
-            st.error(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
+            print(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
             return None
     except Exception as e:
-        st.error(f"❌ An error occurred while searching for the artist: {e}")
+        print(f"❌ An error occurred while searching for the artist: {e}")
         return None
 
-# Streamlit UI
-st.title("🎶 Music Recommendation System")
+# Function to get song recommendations
+def get_recommendations(seed_artists=None, seed_genres=None, limit=10):
+    recommendations_url = "https://api.spotify.com/v1/recommendations"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {
+        "seed_artists": ",".join(seed_artists or []),
+        "seed_genres": ",".join(seed_genres or []),
+        "limit": limit
+    }
 
-# Input Fields
-artist_name = st.text_input("Artist Name (optional)")
+    try:
+        response = requests.get(recommendations_url, headers=headers, params=params)
 
-# Get Recommendations Button
-if st.button("Get Recommendations"):
-    if not access_token:
-        st.error("❌ No access token provided.")
-    else:
-        # Search for the artist
-        result = search_artist(artist_name, access_token)
-        if result:
-            st.write("✅ Artist Found:")
-            st.json(result)  # Display the JSON response
+        if response.status_code == 200:
+            recommendations = response.json()["tracks"]
+            print("🎧 Recommended Songs:")
+            for track in recommendations:
+                print(f"- **{track['name']}** by **{track['artists'][0]['name']}**")
+                print(f"  🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
         else:
-            st.write("❌ Failed to fetch artist details.")
+            print(f"❌ Failed to fetch recommendations: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ An error occurred while fetching recommendations: {e}")
+
+# Main logic
+if __name__ == "__main__":
+    # Step 1: Search for an artist
+    artist_name = "Ed Sheeran"
+    artist_id = get_artist_id(artist_name, access_token)
+
+    if artist_id:
+        # Step 2: Get song recommendations
+        seed_artists = [artist_id]  # Use the artist ID as a seed
+        seed_genres = ["pop", "soft pop"]  # Add relevant genres
+        get_recommendations(seed_artists=seed_artists, seed_genres=seed_genres)
