@@ -1,3 +1,4 @@
+import streamlit as st
 import requests
 
 # Your valid access token
@@ -16,16 +17,16 @@ def get_artist_id(artist_name, access_token):
             results = response.json()
             if results["artists"]["items"]:
                 artist_id = results["artists"]["items"][0]["id"]
-                print(f"✅ Found artist: {results['artists']['items'][0]['name']} (ID: {artist_id})")
+                st.write(f"✅ Found artist: {results['artists']['items'][0]['name']} (ID: {artist_id})")
                 return artist_id
             else:
-                print(f"❌ No artist found with the name '{artist_name}'.")
+                st.error(f"❌ No artist found with the name '{artist_name}'.")
                 return None
         else:
-            print(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
+            st.error(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
             return None
     except Exception as e:
-        print(f"❌ An error occurred while searching for the artist: {e}")
+        st.error(f"❌ An error occurred while searching for the artist: {e}")
         return None
 
 # Function to get song recommendations
@@ -43,23 +44,42 @@ def get_recommendations(seed_artists=None, seed_genres=None, limit=10):
 
         if response.status_code == 200:
             recommendations = response.json()["tracks"]
-            print("🎧 Recommended Songs:")
+            st.write("🎧 Recommended Songs:")
             for track in recommendations:
-                print(f"- **{track['name']}** by **{track['artists'][0]['name']}**")
-                print(f"  🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
+                st.write(f"- **{track['name']}** by **{track['artists'][0]['name']}**")
+                st.write(f"  🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
         else:
-            print(f"❌ Failed to fetch recommendations: {response.status_code} - {response.text}")
+            st.error(f"❌ Failed to fetch recommendations: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"❌ An error occurred while fetching recommendations: {e}")
+        st.error(f"❌ An error occurred while fetching recommendations: {e}")
 
-# Main logic
-if __name__ == "__main__":
-    # Step 1: Search for an artist
-    artist_name = "Ed Sheeran"
-    artist_id = get_artist_id(artist_name, access_token)
+# Streamlit UI
+st.title("🎶 Music Recommendation System")
 
-    if artist_id:
-        # Step 2: Get song recommendations
-        seed_artists = [artist_id]  # Use the artist ID as a seed
-        seed_genres = ["pop", "soft pop"]  # Add relevant genres
-        get_recommendations(seed_artists=seed_artists, seed_genres=seed_genres)
+# Input Fields
+artist_name = st.text_input("Artist Name (optional)")
+genre = st.text_input("Genre (optional, e.g., pop, rock, classical)")
+
+# Get Recommendations Button
+if st.button("Get Recommendations"):
+    if not artist_name and not genre:
+        st.error("❌ Please provide at least an artist name or genre.")
+    else:
+        seed_artists = []
+        seed_genres = []
+
+        # Get artist ID if artist name is provided
+        if artist_name:
+            artist_id = get_artist_id(artist_name, access_token)
+            if artist_id:
+                seed_artists.append(artist_id)
+
+        # Add genre if provided
+        if genre:
+            seed_genres = [g.strip().lower() for g in genre.split(",")]
+
+        # Get recommendations
+        if seed_artists or seed_genres:
+            get_recommendations(seed_artists=seed_artists, seed_genres=seed_genres)
+        else:
+            st.error("❌ Please provide valid seeds (artist or genre).")
