@@ -28,5 +28,28 @@ def get_spotify_token(client_id, client_secret):
 access_token = get_spotify_token(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
 if access_token:
     st.write("✅ Access Token:", access_token)
+
+    # Example: Search for an artist
+    artist_name = "Ed Sheeran"
+    search_url = "https://api.spotify.com/v1/search"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"q": artist_name, "type": "artist", "limit": 1}
+
+    search_response = requests.get(search_url, headers=headers, params=params)
+    
+    # Debug: Print the search response
+    st.write(f"Search Response Status Code: {search_response.status_code}")
+    st.write(f"Search Response Text: {search_response.text}")
+
+    if search_response.status_code == 200:
+        results = search_response.json()
+        if results["artists"]["items"]:
+            artist = results["artists"]["items"][0]
+            st.write(f"🎵 Found Artist: {artist['name']}")
+            st.write(f"🔗 Spotify URL: {artist['external_urls']['spotify']}")
+        else:
+            st.write(f"❌ No artist found with the name '{artist_name}'.")
+    else:
+        st.error(f"❌ Failed to search for artist. Status Code: {search_response.status_code}")
 else:
     st.write("❌ Failed to retrieve access token.")
