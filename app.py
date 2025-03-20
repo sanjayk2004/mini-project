@@ -42,6 +42,31 @@ def refresh_token_if_needed(token_data, client_id, client_secret):
         return get_spotify_token(client_id, client_secret)
     return token_data
 
+# Function to search for an artist and return their ID
+def get_artist_id(artist_name, access_token):
+    search_url = "https://api.spotify.com/v1/search"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"q": f"artist:{artist_name}", "type": "artist", "limit": 1}
+
+    try:
+        response = requests.get(search_url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            results = response.json()
+            if results["artists"]["items"]:
+                artist_id = results["artists"]["items"][0]["id"]
+                st.write(f"✅ Found artist: {results['artists']['items'][0]['name']} (ID: {artist_id})")
+                return artist_id
+            else:
+                st.error(f"❌ No artist found with the name '{artist_name}'.")
+                return None
+        else:
+            st.error(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        st.error(f"❌ An error occurred while searching for the artist: {e}")
+        return None
+
 # Function to get valid genres from Spotify
 def get_valid_genres(access_token):
     url = "https://api.spotify.com/v1/recommendations/available-genre-seeds"
@@ -67,11 +92,16 @@ def get_valid_genres(access_token):
 # Function to get Spotify recommendations
 def get_spotify_recommendations(access_token, seed_artists=None, seed_genres=None, limit=10):
     try:
-        # Ensure at least 5 seeds are provided
+        # Ensure at least 1 seed is provided
         total_seeds = len(seed_artists or []) + len(seed_genres or [])
-        if total_seeds < 5:
-            default_genres = get_valid_genres(access_token)[:5 - total_seeds]
-            seed_genres.extend(default_genres)
+        if total_seeds < 1:
+            st.error("❌ At least one valid seed (artist or genre) is required.")
+            return None
+
+        # Ensure no more than 5 seeds are provided
+        if total_seeds > 5:
+            st.error("❌ Too many seeds provided. Maximum allowed is 5.")
+            return None
 
         # Ensure seed_artists and seed_genres are not None
         seed_artists = seed_artists or []
@@ -142,19 +172,9 @@ if st.button("Get Recommendations"):
 
             # Get artist ID if artist name is provided
             if artist_name:
-                search_url = "https://api.spotify.com/v1/search"
-                headers = {"Authorization": f"Bearer {access_token}"}
-                params = {"q": f"artist:{artist_name}", "type": "artist", "limit": 1}
-                response = requests.get(search_url, headers=headers, params=params)
-
-                if response.status_code == 200:
-                    results = response.json()
-                    if results["artists"]["items"]:
-                        seed_artists = [results["artists"]["items"][0]["id"]]
-                    else:
-                        st.write(f"❌ No artist found with the name '{artist_name}'.")
-                else:
-                    st.error(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
+                artist_id = get_artist_id(artist_name, access_token)
+                if artist_id:
+                    seed_artists.append(artist_id)
 
             # Add genre if provided
             if genre:
