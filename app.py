@@ -3,27 +3,25 @@ import requests
 import time
 
 # Set up Spotify API credentials
-SPOTIFY_CLIENT_ID = "3bab3dd2fd2343eea860292ecca7d41f"
-SPOTIFY_CLIENT_SECRET = "671ad3eb396041d28f043f8d8f0c63ac"
+SPOTIFY_CLIENT_ID = "3bab3dd2fd2343eea860292ecca7d41f"  # Replace with your actual Client ID
+SPOTIFY_CLIENT_SECRET = "671ad3eb396041d28f043f8d8f0c63ac"  # Replace with your actual Client Secret
 
 # Function to get Spotify access token
 def get_spotify_token(client_id, client_secret):
     auth_url = "https://accounts.spotify.com/api/token"
     try:
-        # Make the POST request to get the access token
-        auth_response = requests.post(
+        response = requests.post(
             auth_url,
             data={"grant_type": "client_credentials"},
             auth=(client_id, client_secret)
         )
 
-        # Check if the request was successful
-        if auth_response.status_code == 200:
-            token_data = auth_response.json()
+        if response.status_code == 200:
+            token_data = response.json()
             token_data["expires_at"] = time.time() + token_data["expires_in"]  # Add expiration time
             return token_data
         else:
-            st.error(f"❌ Failed to get Spotify access token: {auth_response.status_code} - {auth_response.text}")
+            st.error(f"❌ Failed to get Spotify access token: {response.status_code} - {response.text}")
             return None
     except Exception as e:
         st.error(f"❌ An error occurred while fetching the access token: {e}")
@@ -35,11 +33,11 @@ def is_token_expired(token_data):
         return True  # Treat missing token as expired
     return time.time() >= token_data["expires_at"]
 
-# Function to refresh the token if expired
+# Function to refresh the token if needed
 def refresh_token_if_needed(token_data, client_id, client_secret):
     if is_token_expired(token_data):
         st.write("🔄 Refreshing access token...")
-        return get_spotify_token(client_id, client_secret)
+        return get_spotify_token(client_id, client_secret)  # Regenerate token
     return token_data
 
 # Function to search for an artist and return their ID
