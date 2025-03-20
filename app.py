@@ -1,43 +1,63 @@
 import streamlit as st
 import requests
+import time
 
-# Set up Spotify API
+# Set up Spotify API credentials
 SPOTIFY_CLIENT_ID = "3bab3dd2fd2343eea860292ecca7d41f"
 SPOTIFY_CLIENT_SECRET = "671ad3eb396041d28f043f8d8f0c63ac"
 
 # Function to get Spotify access token
 def get_spotify_token(client_id, client_secret):
-    """Get an access token from Spotify."""
-    auth_url = "https://accounts.spotify.com/api/token"
-    auth_response = requests.post(
-        auth_url,
-        data={"grant_type": "client_credentials"},
-        auth=(client_id, client_secret))
-    if auth_response.status_code == 200:
-        return auth_response.json()["access_token"]
-    else:
-        st.error("❌ Failed to get Spotify access token. Check your credentials.")
+    auth_url = "https://accounts.spotify.com/api/token"  # Correct authorization URL
+    try:
+        # Make the POST request to get the access token
+        auth_response = requests.post(
+            auth_url,
+            data={"grant_type": "client_credentials"},  # Required parameter
+            auth=(client_id, client_secret)  # Basic Authentication
+        )
+
+        # Check if the request was successful
+        if auth_response.status_code == 200:
+            token_data = auth_response.json()
+            token_data["expires_at"] = time.time() + token_data["expires_in"]  # Add expiration time
+            return token_data
+        else:
+            st.error(f"❌ Failed to get Spotify access token: {auth_response.status_code} - {auth_response.text}")
+            return None
+    except Exception as e:
+        st.error(f"❌ An error occurred while fetching the access token: {e}")
         return None
 
-# Get Spotify access token
-access_token = get_spotify_token(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+# Function to check if the token is expired
+def is_token_expired(token_data):
+    return time.time() >= token_data["expires_at"]
+
+# Function to refresh the token if expired
+def refresh_token_if_needed(token_data, client_id, client_secret):
+    if is_token_expired(token_data):
+        st.write("🔄 Refreshing access token...")
+        return get_spotify_token(client_id, client_secret)
+    return token_data
+
+# Function to get valid genres from Spotify
+def get_valid_genres(access_token):
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get("https://api.spotify.com/v1/recommendations/available-genre-seeds", headers=headers)
+    if response.status_code == 200:
+        return response.json()["genres"]
+    else:
+        st.error(f"❌ Failed to fetch valid genres: {response.status_code} - {response.text}")
+        return []
 
 # Function to get Spotify recommendations
-def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
-    """Get song recommendations from Spotify."""
+def get_spotify_recommendations(access_token, seed_artists=None, seed_genres=None, limit=10):
     try:
-        # Debug: Print seed values
-        st.write(f"🔍 Seed Artists: {seed_artists}")
-        st.write(f"🔍 Seed Genres: {seed_genres}")
-
         # Ensure at least 5 seeds are provided
         total_seeds = len(seed_artists or []) + len(seed_genres or [])
         if total_seeds < 5:
-            st.write(f"⚠️ Adding default seeds to meet the requirement (you provided {total_seeds}).")
-
-            # Add default genres if needed
-            default_genres = ["pop", "rock", "classical", "jazz", "electronic"]
-            seed_genres.extend(default_genres[:5 - total_seeds])
+            default_genres = get_valid_genres(access_token)[:5 - total_seeds]
+            seed_genres.extend(default_genres)
 
         # Ensure seed_artists and seed_genres are not None
         seed_artists = seed_artists or []
@@ -69,7 +89,6 @@ def get_spotify_recommendations(seed_artists=None, seed_genres=None, limit=10):
 st.title("🎶 Music Recommendation System")
 
 # Input Fields
-st.write("### Enter your preferences:")
 artist_name = st.text_input("Artist Name (optional)")
 genre = st.text_input("Genre (optional, e.g., pop, rock, classical)")
 language = st.text_input("Language (optional, e.g., english, hindi)")
@@ -79,65 +98,59 @@ if st.button("Get Recommendations"):
     seed_artists = []
     seed_genres = []
 
-    # Get artist ID if artist name is provided
-    if artist_name and access_token:
-        search_url = "https://api.spotify.com/v1/search"
-        headers = {"Authorization": f"Bearer {access_token}"}
-        params = {"q": f"artist:{artist_name}", "type": "artist", "limit": 1}
-        response = requests.get(search_url, headers=headers, params=params)
+    # Refresh token if needed
+    token_data = refresh_token_if_needed(token_data, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+    access_token = token_data["access_token"] if token_data else None
 
-        if response.status_code == 200:
-            results = response.json()
-            if results["artists"]["items"]:
-                seed_artists = [results["artists"]["items"][0]["id"]]
-            else:
-                st.write(f"❌ No artist found with the name '{artist_name}'.")
-        else:
-            st.error(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
-
-    # Add genre if provided
-    if genre:
-        # Split multiple genres into a list and remove extra quotes
-        seed_genres = [g.strip().lower().replace("'", "") for g in genre.split(",")]
-
-    # Add language as a genre (Spotify doesn't support language directly)
-    if language:
-        # Map languages to valid Spotify genres
-        language_to_genre = {
-            "english": "pop",
-            "hindi": "bollywood",
-            "tamil": "world",
-            "malayalam": "world",
-            "spanish": "latin",
-            "korean": "k-pop",
-            "french": "french",
-            "german": "german",
-            "japanese": "j-pop",
-            "chinese": "mandopop",
-            "arabic": "arabic",
-            "italian": "italian",
-            "portuguese": "samba",
-            "russian": "russian",
-            "turkish": "turkish"
-        }
-        for lang in language.split(","):
-            lang = lang.strip().lower().replace("'", "")
-            if lang in language_to_genre:
-                seed_genres.append(language_to_genre[lang])
-            else:
-                st.write(f"⚠️ Language '{lang}' is not supported. Using default genres instead.")
-
-    # Ensure seed_genres is a list
-    if not seed_genres:
-        seed_genres = []
-
-    # Get recommendations
-    if seed_artists or seed_genres:
-        recommendations = get_spotify_recommendations(seed_artists=seed_artists, seed_genres=seed_genres)
-        if recommendations:
-            st.write("🎧 Recommended Songs:")
-            for track in recommendations:
-                st.write(f"- **{track['name']}** by **{track['artists'][0]['name']}**")
-                st.write(f"🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
+    if not access_token:
+        st.error("❌ Unable to retrieve Spotify access token. Please check your credentials.")
     else:
-        st.write("❌ Please provide at least an artist name or genre.")
+        # Get artist ID if artist name is provided
+        if artist_name:
+            search_url = "https://api.spotify.com/v1/search"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            params = {"q": f"artist:{artist_name}", "type": "artist", "limit": 1}
+            response = requests.get(search_url, headers=headers, params=params)
+
+            if response.status_code == 200:
+                results = response.json()
+                if results["artists"]["items"]:
+                    seed_artists = [results["artists"]["items"][0]["id"]]
+                else:
+                    st.write(f"❌ No artist found with the name '{artist_name}'.")
+            else:
+                st.error(f"❌ Failed to search for artist: {response.status_code} - {response.text}")
+
+        # Add genre if provided
+        if genre:
+            seed_genres = [g.strip().lower().replace("'", "") for g in genre.split(",")]
+
+        # Add language as a genre
+        if language:
+            language_to_genre = {
+                "english": "pop", "hindi": "bollywood", "tamil": "world", "malayalam": "world",
+                "spanish": "latin", "korean": "k-pop", "french": "french", "german": "german",
+                "japanese": "j-pop", "chinese": "mandopop", "arabic": "arabic", "italian": "italian",
+                "portuguese": "samba", "russian": "russian", "turkish": "turkish"
+            }
+            for lang in language.split(","):
+                lang = lang.strip().lower().replace("'", "")
+                if lang in language_to_genre:
+                    seed_genres.append(language_to_genre[lang])
+                else:
+                    st.write(f"⚠️ Language '{lang}' is not supported. Using default genres instead.")
+
+        # Ensure seed_genres is a list
+        if not seed_genres:
+            seed_genres = []
+
+        # Get recommendations
+        if seed_artists or seed_genres:
+            recommendations = get_spotify_recommendations(access_token, seed_artists=seed_artists, seed_genres=seed_genres)
+            if recommendations:
+                st.write("🎧 Recommended Songs:")
+                for track in recommendations:
+                    st.write(f"- **{track['name']}** by **{track['artists'][0]['name']}**")
+                    st.write(f"🔗 [Listen on Spotify]({track['external_urls']['spotify']})")
+        else:
+            st.write("❌ Please provide at least an artist name or genre.")
