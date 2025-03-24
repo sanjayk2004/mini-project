@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-# URLs of the CSV files in your GitHub repository
+# URLs of the CSV files in your GitHub repository (ensure these paths are correct)
 BASE_GITHUB_URL = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/"
 DATA_BY_ARTIST_CSV = BASE_GITHUB_URL + "data_by_artist.csv"
 DATA_BY_GENRES_CSV = BASE_GITHUB_URL + "data_by_genres (1).csv"
@@ -10,6 +10,7 @@ DATA_W_GENRES_CSV = BASE_GITHUB_URL + "data_w_genres.csv"
 
 @st.cache_data
 def load_data():
+    # Load CSV files from GitHub
     data_by_artist = pd.read_csv(DATA_BY_ARTIST_CSV)
     data_by_genres = pd.read_csv(DATA_BY_GENRES_CSV)
     data_by_year = pd.read_csv(DATA_BY_YEAR_CSV)
@@ -19,14 +20,13 @@ def load_data():
 def main():
     st.title("Music Recommendation System")
 
-    # Load data from the cached function
+    # Load data from CSV files
     data_by_artist, data_by_genres, data_by_year, data_w_genres = load_data()
-    
-    st.write("Data Loaded Successfully!")
-    
-    # Display sample data to check
-    st.write("Sample data (data_by_year):", data_by_year.head())
-    
+
+    # Display the initial data (just for debugging)
+    st.write("Sample Data by Year:")
+    st.write(data_by_year.head())
+
     # Inputs from the user
     year = st.selectbox("Select Year", data_by_year['year'].unique())
     artist = st.selectbox("Select Artist", data_by_artist['artists'].unique())
@@ -34,42 +34,49 @@ def main():
 
     st.write("### Recommended Songs Based on Your Inputs:")
     recommendations = recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres)
-    
-    # Display recommendations or a warning if empty
+
+    # Display recommendations or warning if empty
     if not recommendations.empty:
         st.write(recommendations)
     else:
         st.warning("No recommendations found. Try selecting different filters.")
 
-# Music Recommendation Logic
 def recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres):
-    # Step 1: Filter based on the selected year
+    st.write(f"Filtering for year: {year}, artist: {artist}, genre: {genre}")
+
+    # Filter based on the selected year
     filtered_data = data_by_year[data_by_year['year'] == int(year)]
-    st.write("After filtering by year:", filtered_data.columns)
+    st.write("Data after filtering by year:")
+    st.write(filtered_data.head())  # Debug the filtered data after year filter
     
-    # Step 2: Ensure the artists column exists before filtering by artist
-    if 'artists' in filtered_data.columns:
-        filtered_data = filtered_data[filtered_data['artists'].str.contains(artist, na=False)]
-    else:
-        st.error("'artists' column not found in filtered data after filtering by year!")
-        return pd.DataFrame()  # Return empty DataFrame to prevent further errors
+    # Check what columns exist after filtering
+    st.write("Columns after filtering by year:", filtered_data.columns.tolist())
 
-    st.write("After filtering by artist:", filtered_data.columns)
+    # Handle missing columns gracefully
+    if 'artists' not in filtered_data.columns:
+        st.error("'artists' column not found after filtering by year!")
+        st.write("Full DataFrame structure after filtering:", filtered_data.head())
+        return pd.DataFrame()  # Return empty DataFrame to avoid further issues
 
-    # Step 3: Filter by genre and check the DataFrame again
-    if 'genres' in filtered_data.columns:
-        filtered_data = filtered_data[filtered_data['genres'].str.contains(genre, na=False)]
-    else:
-        st.error("'genres' column not found in filtered data after filtering by artist!")
-        return pd.DataFrame()  # Return empty DataFrame to prevent further errors
-    
-    st.write("After filtering by genre:", filtered_data.columns)
+    # Filter by artist
+    filtered_data = filtered_data[filtered_data['artists'].str.contains(artist, na=False)]
+    st.write("Data after filtering by artist:")
+    st.write(filtered_data.head())  # Debugging after artist filter
 
-    # Step 4: Return top recommendations (10 rows)
+    if 'genres' not in filtered_data.columns:
+        st.error("'genres' column not found after filtering by artist!")
+        st.write("Full DataFrame structure after artist filter:", filtered_data.head())
+        return pd.DataFrame()
+
+    # Filter by genre
+    filtered_data = filtered_data[filtered_data['genres'].str.contains(genre, na=False)]
+    st.write("Data after filtering by genre:")
+    st.write(filtered_data.head())  # Debugging after genre filter
+
     if not filtered_data.empty:
         return filtered_data.head(10)
     else:
-        st.warning("No recommendations found for the selected criteria.")
+        st.warning("No recommendations found for the selected filters.")
         return pd.DataFrame()
 
 if __name__ == "__main__":
