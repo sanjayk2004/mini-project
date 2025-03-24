@@ -11,7 +11,7 @@ DATA_W_GENRES_CSV = BASE_GITHUB_URL + "data_w_genres.csv"
 @st.cache_data
 def load_data():
     try:
-        # Load CSV files with specified encoding to handle non-UTF-8 characters
+        # Load CSV files with error handling for encodings
         data_by_artist = pd.read_csv(DATA_BY_ARTIST_CSV, encoding="ISO-8859-1")
         data_by_genres = pd.read_csv(DATA_BY_GENRES_CSV, encoding="ISO-8859-1")
         data_by_year = pd.read_csv(DATA_BY_YEAR_CSV, encoding="ISO-8859-1")
@@ -21,7 +21,6 @@ def load_data():
         st.error(f"Failed to load CSV files: {e}")
         return None, None, None, None
 
-# Streamlit Main App Function
 def main():
     st.title("Music Recommendation System 🎵")
     st.write("This app provides song recommendations based on year, artist, and genre.")
@@ -29,50 +28,39 @@ def main():
     # Load the data
     data_by_artist, data_by_genres, data_by_year, data_w_genres = load_data()
 
-    # If any dataset is None or empty, show error and exit
     if any(df is None or df.empty for df in [data_by_artist, data_by_genres, data_by_year, data_w_genres]):
         st.error("Data could not be loaded or is empty. Please check your CSV files.")
         return
 
-    # Debugging: Display the columns of data_by_artist to verify the structure
     st.write("### Debugging Information:")
     st.write("Columns in data_by_artist dataset:", data_by_artist.columns)
 
-    # Check if 'artists' column exists and is valid
-    if 'artists' in data_by_artist.columns:
-        artist = st.selectbox("Select Artist", sorted(data_by_artist['artists'].dropna().unique()))
-    else:
-        st.error("The 'artists' column is missing in the data_by_artist dataset.")
-        return
+    # Dropdowns for year, artist, and genre selection
+    artist = st.selectbox("Select Artist", sorted(data_by_artist['artists'].dropna().unique())) if 'artists' in data_by_artist.columns else None
+    year = st.selectbox("Select Year", sorted(data_by_year['year'].dropna().unique())) if 'year' in data_by_year.columns else None
+    genre = st.selectbox("Select Genre", sorted(data_by_genres['genres'].dropna().unique())) if 'genres' in data_by_genres.columns else None
 
-    # Check if 'year' column exists
-    if 'year' in data_by_year.columns:
-        year = st.selectbox("Select Year", sorted(data_by_year['year'].dropna().unique()))
-    else:
-        st.error("The 'year' column is missing in the data_by_year dataset.")
-        return
-
-    # Check if 'genres' column exists
-    if 'genres' in data_by_genres.columns:
-        genre = st.selectbox("Select Genre", sorted(data_by_genres['genres'].dropna().unique()))
-    else:
-        st.error("The 'genres' column is missing in the data_by_genres dataset.")
+    if not (artist and year and genre):
+        st.error("Please ensure 'artist', 'year', and 'genre' are correctly selected.")
         return
 
     st.write("### Recommended Songs Based on Your Inputs:")
     recommendations = recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres)
     st.write(recommendations)
 
-# Music Recommendation Logic
 def recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres):
     try:
-        # Filter the data based on year, artist, and genre
+        # Debug filtered_data before filtering
         filtered_data = data_by_year[data_by_year['year'] == int(year)]
-        filtered_data = filtered_data[filtered_data['artists'].str.contains(artist, na=False)]
-        filtered_data = filtered_data[filtered_data['genres'].str.contains(genre, na=False)]
+        st.write("### Debugging Filtered Data (Before Filtering by Artist):")
+        st.write("Columns in filtered_data:", filtered_data.columns)
 
-        # Display top 10 recommendations (or all if fewer than 10)
-        return filtered_data.head(10)
+        if 'artists' in filtered_data.columns:
+            filtered_data = filtered_data[filtered_data['artists'].str.contains(artist, na=False)]
+            filtered_data = filtered_data[filtered_data['genres'].str.contains(genre, na=False)]
+            return filtered_data.head(10)
+        else:
+            return "Error: 'artists' column is not found in filtered_data after year filtering."
     except Exception as e:
         return f"Error during filtering: {e}"
 
