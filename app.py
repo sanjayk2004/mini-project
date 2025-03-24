@@ -1,12 +1,13 @@
 import pandas as pd
 import streamlit as st
+from urllib.parse import quote  # For URL encoding
 
 # URLs of the CSV files in your GitHub repository (raw format)
 BASE_GITHUB_URL = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/"
-DATA_BY_ARTIST_CSV = BASE_GITHUB_URL + "data_by_artist.csv"
-DATA_BY_GENRES_CSV = BASE_GITHUB_URL + "data_by_genres (1).csv"
-DATA_BY_YEAR_CSV = BASE_GITHUB_URL + "data_by_year (1).csv"
-DATA_W_GENRES_CSV = BASE_GITHUB_URL + "data_w_genres.csv"
+DATA_BY_ARTIST_CSV = BASE_GITHUB_URL + quote("data_by_artist.csv")
+DATA_BY_GENRES_CSV = BASE_GITHUB_URL + quote("data_by_genres (1).csv")
+DATA_BY_YEAR_CSV = BASE_GITHUB_URL + quote("data_by_year (1).csv")
+DATA_W_GENRES_CSV = BASE_GITHUB_URL + quote("data_w_genres.csv")
 
 @st.cache_data
 def load_data():
