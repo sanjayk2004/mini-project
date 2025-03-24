@@ -29,30 +29,32 @@ def main():
     # Load the data
     data_by_artist, data_by_genres, data_by_year, data_w_genres = load_data()
 
-    # If the data couldn't load, show an error and exit the function
-    if data_by_artist is None or data_by_genres is None or data_by_year is None or data_w_genres is None:
-        st.error("Data could not be loaded. Please check your file paths and try again.")
+    # If any dataset is None or empty, show error and exit
+    if any(df is None or df.empty for df in [data_by_artist, data_by_genres, data_by_year, data_w_genres]):
+        st.error("Data could not be loaded or is empty. Please check your CSV files.")
         return
 
-    # Debugging: Show basic data summaries
-    st.write("### Sample Data:")
-    st.write(data_by_year.head())
+    # Debugging: Display the columns of data_by_artist to verify the structure
+    st.write("### Debugging Information:")
+    st.write("Columns in data_by_artist dataset:", data_by_artist.columns)
 
-    # Inputs from the user
+    # Check if 'artists' column exists and is valid
     if 'artists' in data_by_artist.columns:
-        artist = st.selectbox("Select Artist", sorted(data_by_artist['artists'].unique()))
+        artist = st.selectbox("Select Artist", sorted(data_by_artist['artists'].dropna().unique()))
     else:
         st.error("The 'artists' column is missing in the data_by_artist dataset.")
         return
 
+    # Check if 'year' column exists
     if 'year' in data_by_year.columns:
-        year = st.selectbox("Select Year", sorted(data_by_year['year'].unique()))
+        year = st.selectbox("Select Year", sorted(data_by_year['year'].dropna().unique()))
     else:
         st.error("The 'year' column is missing in the data_by_year dataset.")
         return
 
+    # Check if 'genres' column exists
     if 'genres' in data_by_genres.columns:
-        genre = st.selectbox("Select Genre", sorted(data_by_genres['genres'].unique()))
+        genre = st.selectbox("Select Genre", sorted(data_by_genres['genres'].dropna().unique()))
     else:
         st.error("The 'genres' column is missing in the data_by_genres dataset.")
         return
