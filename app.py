@@ -31,7 +31,7 @@ def main():
         st.error("Data could not be loaded or is empty. Please check your CSV files.")
         return
 
-    # Selecting artist from the `data_by_artist` file
+    # Artist selection now strictly based on `data_by_artist`
     st.write("Columns in data_by_artist dataset:", data_by_artist.columns)
     artist = st.selectbox("Select Artist", sorted(data_by_artist['artists'].dropna().unique())) if 'artists' in data_by_artist.columns else None
     year = st.selectbox("Select Year", sorted(data_by_year['year'].dropna().unique())) if 'year' in data_by_year.columns else None
@@ -42,20 +42,18 @@ def main():
         return
 
     st.write("### Recommended Songs Based on Your Inputs:")
-    recommendations = recommend_music(year, artist, genre, data_by_year, data_by_genres, data_w_genres)
+    recommendations = recommend_music(year, genre, data_by_year, data_by_genres)
     st.write(recommendations)
 
-def recommend_music(year, artist, genre, data_by_year, data_by_genres, data_w_genres):
+def recommend_music(year, genre, data_by_year, data_by_genres):
     try:
-        # Filter by year (no need to look for artists in `data_by_year`)
+        # Filter by year and genre (skipping artist filtering here)
         filtered_data = data_by_year[data_by_year['year'] == int(year)]
-
-        # Display some debugging info about the filtered dataset
         st.write("Columns in filtered_data after filtering by year:", filtered_data.columns)
-        st.write(filtered_data.head())
 
-        # Perform filtering with genres and return filtered recommendations
+        # Now filter with genres
         filtered_data = filtered_data[filtered_data['genres'].str.contains(genre, na=False)]
+
         if filtered_data.empty:
             return "No matching songs found based on your filters."
         
