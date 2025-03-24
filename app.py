@@ -1,18 +1,16 @@
 import pandas as pd
 import streamlit as st
-from urllib.parse import quote  # For URL encoding
 
-# URLs of the CSV files in your GitHub repository (raw format)
-BASE_GITHUB_URL = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/"
-DATA_BY_ARTIST_CSV = BASE_GITHUB_URL + quote("data_by_artist.csv")
-DATA_BY_GENRES_CSV = BASE_GITHUB_URL + quote("data_by_genres (1).csv")
-DATA_BY_YEAR_CSV = BASE_GITHUB_URL + quote("data_by_year (1).csv")
-DATA_W_GENRES_CSV = BASE_GITHUB_URL + quote("data_w_genres.csv")
+# Correct raw URLs pointing directly to your CSV files
+DATA_BY_ARTIST_CSV = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/data_by_artist.csv"
+DATA_BY_GENRES_CSV = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/data_by_genres%20(1).csv"
+DATA_BY_YEAR_CSV = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/data_by_year%20(1).csv"
+DATA_W_GENRES_CSV = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/data_w_genres.csv"
 
 @st.cache_data
 def load_data():
     try:
-        # Try reading with different encodings
+        # Load CSV files using encoding to avoid UnicodeDecodeError
         data_by_artist = pd.read_csv(DATA_BY_ARTIST_CSV, encoding='latin1', on_bad_lines='skip')
         data_by_genres = pd.read_csv(DATA_BY_GENRES_CSV, encoding='latin1', on_bad_lines='skip')
         data_by_year = pd.read_csv(DATA_BY_YEAR_CSV, encoding='latin1', on_bad_lines='skip')
@@ -30,7 +28,7 @@ def main():
     # Load data from CSV files
     data_by_artist, data_by_genres, data_by_year, data_w_genres = load_data()
 
-    # Debug: Display sample data for verification
+    # Debugging display: Show top rows of the data
     st.write("Sample Data by Year (Top 5 Rows):")
     st.write(data_by_year.head())
 
