@@ -11,7 +11,7 @@ DATA_W_GENRES_CSV = BASE_GITHUB_URL + "data_w_genres.csv"
 @st.cache_data
 def load_data():
     try:
-        # Load CSV files directly from GitHub URLs with specified encoding
+        # Load CSV files with specified encoding to handle non-UTF-8 characters
         data_by_artist = pd.read_csv(DATA_BY_ARTIST_CSV, encoding="ISO-8859-1")
         data_by_genres = pd.read_csv(DATA_BY_GENRES_CSV, encoding="ISO-8859-1")
         data_by_year = pd.read_csv(DATA_BY_YEAR_CSV, encoding="ISO-8859-1")
@@ -29,21 +29,37 @@ def main():
     # Load the data
     data_by_artist, data_by_genres, data_by_year, data_w_genres = load_data()
 
-    if data_by_year is not None:
-        # Display basic info if CSVs load correctly
-        st.write("## Sample Table from Data by Year:")
-        st.write(data_by_year.head())
-
-        # Inputs from the user
-        year = st.selectbox("Select Year", sorted(data_by_year['year'].unique()))
-        artist = st.selectbox("Select Artist", sorted(data_by_artist['artists'].unique()))
-        genre = st.selectbox("Select Genre", sorted(data_by_genres['genres'].unique()))
-
-        st.write("### Recommended Songs Based on Your Inputs:")
-        recommendations = recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres)
-        st.write(recommendations)
-    else:
+    # If the data couldn't load, show an error and exit the function
+    if data_by_artist is None or data_by_genres is None or data_by_year is None or data_w_genres is None:
         st.error("Data could not be loaded. Please check your file paths and try again.")
+        return
+
+    # Debugging: Show basic data summaries
+    st.write("### Sample Data:")
+    st.write(data_by_year.head())
+
+    # Inputs from the user
+    if 'artists' in data_by_artist.columns:
+        artist = st.selectbox("Select Artist", sorted(data_by_artist['artists'].unique()))
+    else:
+        st.error("The 'artists' column is missing in the data_by_artist dataset.")
+        return
+
+    if 'year' in data_by_year.columns:
+        year = st.selectbox("Select Year", sorted(data_by_year['year'].unique()))
+    else:
+        st.error("The 'year' column is missing in the data_by_year dataset.")
+        return
+
+    if 'genres' in data_by_genres.columns:
+        genre = st.selectbox("Select Genre", sorted(data_by_genres['genres'].unique()))
+    else:
+        st.error("The 'genres' column is missing in the data_by_genres dataset.")
+        return
+
+    st.write("### Recommended Songs Based on Your Inputs:")
+    recommendations = recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres)
+    st.write(recommendations)
 
 # Music Recommendation Logic
 def recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres):
