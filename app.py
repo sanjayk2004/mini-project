@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 
-# URLs of the CSV files in your GitHub repository
+# URLs of the CSV files in your GitHub repository (raw format)
 BASE_GITHUB_URL = "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/"
 DATA_BY_ARTIST_CSV = BASE_GITHUB_URL + "data_by_artist.csv"
 DATA_BY_GENRES_CSV = BASE_GITHUB_URL + "data_by_genres (1).csv"
@@ -11,19 +11,16 @@ DATA_W_GENRES_CSV = BASE_GITHUB_URL + "data_w_genres.csv"
 @st.cache_data
 def load_data():
     try:
-        # Explicitly setting encoding to handle Unicode issues
-        data_by_artist = pd.read_csv(DATA_BY_ARTIST_CSV, encoding='utf-8', on_bad_lines='skip')
-        data_by_genres = pd.read_csv(DATA_BY_GENRES_CSV, encoding='utf-8', on_bad_lines='skip')
-        data_by_year = pd.read_csv(DATA_BY_YEAR_CSV, encoding='utf-8', on_bad_lines='skip')
-        data_w_genres = pd.read_csv(DATA_W_GENRES_CSV, encoding='utf-8', on_bad_lines='skip')
+        # Try reading with different encodings
+        data_by_artist = pd.read_csv(DATA_BY_ARTIST_CSV, encoding='latin1', on_bad_lines='skip')
+        data_by_genres = pd.read_csv(DATA_BY_GENRES_CSV, encoding='latin1', on_bad_lines='skip')
+        data_by_year = pd.read_csv(DATA_BY_YEAR_CSV, encoding='latin1', on_bad_lines='skip')
+        data_w_genres = pd.read_csv(DATA_W_GENRES_CSV, encoding='latin1', on_bad_lines='skip')
 
         return data_by_artist, data_by_genres, data_by_year, data_w_genres
 
-    except UnicodeDecodeError as e:
-        st.error(f"Unicode decoding error: {str(e)}")
-        st.stop()
     except Exception as e:
-        st.error(f"An error occurred while loading data: {str(e)}")
+        st.error(f"Failed to load CSV files: {str(e)}")
         st.stop()
 
 def main():
@@ -32,11 +29,11 @@ def main():
     # Load data from CSV files
     data_by_artist, data_by_genres, data_by_year, data_w_genres = load_data()
 
-    # Debug: display sample data
+    # Debug: Display sample data for verification
     st.write("Sample Data by Year (Top 5 Rows):")
     st.write(data_by_year.head())
 
-    # User inputs
+    # Inputs from the user
     year = st.selectbox("Select Year", data_by_year['year'].unique())
     artist = st.selectbox("Select Artist", data_by_artist['artists'].unique())
     genre = st.selectbox("Select Genre", data_by_genres['genres'].unique())
@@ -46,11 +43,9 @@ def main():
     st.write(recommendations)
 
 def recommend_music(year, artist, genre, data_by_year, data_by_artist, data_by_genres, data_w_genres):
-    # Filter data and return recommendations
     filtered_data = data_by_year[data_by_year['year'] == int(year)]
     if 'artists' not in filtered_data.columns:
-        st.error("'artists' column not found after filtering by year!")
-        st.write(filtered_data.head())
+        st.error("'artists' column not found in filtered data!")
         return pd.DataFrame()
 
     filtered_data = filtered_data[filtered_data['artists'].str.contains(artist, na=False)]
