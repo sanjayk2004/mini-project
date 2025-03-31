@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 from time import sleep
 
-# Function to load datasets from GitHub with a progress bar
-@st.cache_data  # Cache data to avoid reloading on every interaction
+
+@st.cache_data 
 def load_data():
     try:
         dataset_urls = [
@@ -14,12 +14,12 @@ def load_data():
         ]
 
         combined_data = pd.DataFrame()
-        progress_text = st.empty()  # Placeholder for progress messages
-        progress_bar = st.progress(0)  # Initialize progress bar
+        progress_text = st.empty()  
+        progress_bar = st.progress(0)  
 
         for i, url in enumerate(dataset_urls):
             progress_text.text(f"Loading dataset {i + 1} of {len(dataset_urls)}...")
-            progress_bar.progress((i + 1) / len(dataset_urls))  # Update progress
+            progress_bar.progress((i + 1) / len(dataset_urls))  
             try:
                 data = pd.read_csv(url)
                 combined_data = pd.concat([combined_data, data], ignore_index=True)
@@ -40,44 +40,43 @@ def recommend_music(release_date, artist, genre, data):
         st.error("No data available to process recommendations.")
         return "No data available."
 
-    # Start with the dataset
+    
     filtered_data = data.copy()
 
-    # Filter by release_date if the 'release_date' column exists
+ 
     if release_date:
         try:
             filtered_data = filtered_data[filtered_data['release_date'] == int(release_date)]
         except (KeyError, ValueError):
             st.warning("Invalid or missing 'release_date' column/inputs.")
 
-    # Filter by artist if the 'artist_name' column exists
+  
     if artist and 'artist_name' in filtered_data.columns:
         filtered_data['artist_name'] = filtered_data['artist_name'].astype(str)
         filtered_data = filtered_data[filtered_data['artist_name'].str.contains(artist, case=False, na=False)]
 
-    # Filter by genre if the 'genre' column exists
+ 
     if genre and 'genre' in filtered_data.columns:
         filtered_data['genre'] = filtered_data['genre'].astype(str)
         filtered_data = filtered_data[filtered_data['genre'].str.contains(genre, case=False, na=False)]
 
-    # Return top 100 recommendations or a message if no results found
+   
     if filtered_data.empty:
         return "No recommendations found for the given inputs."
 
-    # Return the filtered data with specified columns (only if they exist)
+   
     available_columns = [col for col in ['track_name', 'artist_name', 'genre', 'release_date'] if col in filtered_data.columns]
     return filtered_data[available_columns].head(100)
 
-# Streamlit App
 def main():
-    # Set page configuration
+ 
     st.set_page_config(
         page_title="🎵 Music Recommendation System",
         page_icon="🎵",
         layout="wide"
     )
 
-    # Add custom CSS for styling
+
     st.markdown(
         """
         <style>
@@ -112,17 +111,15 @@ def main():
         unsafe_allow_html=True
     )
 
-    # Add a stylish heading
     st.title("🎵 Music Recommendation System 🎵")
 
-    # Load data
     data = load_data()
 
     if data is None:
         st.error("Failed to load datasets. Please check the logs for more details.")
         return
 
-    # Sidebar for inputs
+
     st.sidebar.subheader("🎵 Enter Your Preferences")
     with st.sidebar.form(key="recommendation_form"):
         release_date = st.text_input("Release Date:")
@@ -132,7 +129,6 @@ def main():
         # Submit button with "Enter" key support
         submit_button = st.form_submit_button(label="Get Recommendations")
 
-    # Process recommendations when the form is submitted
     if submit_button:
         if not (release_date or artist or genre):
             st.warning("Please enter at least one filter (Release Date, Artist, or Genre).")
@@ -146,18 +142,18 @@ def main():
                 styled_table = (
                     recommendations.style
                     .set_properties(**{
-                        'background-color': '#ffffff',  # White table background
-                        'color': '#333333',             # Dark gray table text
+                        'background-color': '#ffffff',  
+                        'color': '#333333',             
                         'border-color': '#cccccc'
                     })
                     .set_table_styles([
                         {
                             'selector': 'th',
-                            'props': [('background-color', '#87CEEB'), ('color', 'white')]  # White column names
+                            'props': [('background-color', '#87CEEB'), ('color', 'white')]  
                         },
                         {
                             'selector': 'td',
-                            'props': [('color', '#333333')]  # Dark gray table data
+                            'props': [('color', '#333333')]  
                         }
                     ])
                 )
@@ -165,7 +161,7 @@ def main():
             else:
                 st.info(recommendations)
 
-    # Add an expander for instructions
+  
     with st.expander("ℹ️ How to Use This App"):
         st.write("""
         1. Enter your preferences in the sidebar (e.g., Release Date, Artist, Genre).
@@ -173,7 +169,7 @@ def main():
         3. View up to 100 song recommendations based on your inputs.
         """)
 
-    # Add an expander for dataset details
+
     with st.expander("📊 Dataset Details"):
         st.write("""
         This app combines data from multiple datasets:
@@ -182,7 +178,6 @@ def main():
         - Malayalam_songs.csv
         - Tamil_songs.csv
         """)
-
-# Run the Streamlit app
+        
 if __name__ == "__main__":
     main()
