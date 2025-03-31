@@ -104,7 +104,8 @@ def main():
         }
         /* Change table header and row number colors */
         th {
-            color: #333333 !important; /* Dark gray table headers */
+            background-color: #87CEEB !important; /* Match header background to app background */
+            color: #ffffff !important; /* White column names */
         }
         td {
             color: #333333 !important; /* Dark gray table data */
