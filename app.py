@@ -5,7 +5,7 @@ import pandas as pd
 @st.cache_data  # Cache data to avoid reloading on every interaction
 def load_data():
     try:
-        # URLs of the datasets hosted on GitHub
+        # URLs of the datasets hosted on GitHub (RAW URLs)
         dataset_urls = [
             "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/tcc_ceds_music.csv",
             "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/Hindi_songs.csv",
@@ -125,4 +125,3 @@ def main():
 # Run the Streamlit app
 if __name__ == "__main__":
     main()
-    
