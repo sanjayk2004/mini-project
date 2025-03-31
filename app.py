@@ -82,7 +82,7 @@ def main():
         """
         <style>
         .stApp {
-            background: #f9f9f9; /* Light gray background */
+            background: #87CEEB; /* Sky Blue background */
             color: #333333; /* Dark gray text */
         }
         h1 {
