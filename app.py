@@ -82,7 +82,7 @@ def main():
         """
         <style>
         .stApp {
-            background: #f0f8ff; /* Light blue background */
+            background: #f9f9f9; /* Light gray background */
             color: #333333; /* Dark gray text */
         }
         h1 {
@@ -91,7 +91,7 @@ def main():
             color: #333333; /* Dark gray heading */
         }
         .sidebar .sidebar-content {
-            background: #e6f7ff; /* Lighter blue for sidebar */
+            background: #ffffff; /* White sidebar background */
             color: #333333; /* Dark gray text */
         }
         .stButton>button {
@@ -150,7 +150,7 @@ def main():
             st.subheader("🎶 Recommendations")
             if isinstance(recommendations, pd.DataFrame):
                 st.table(recommendations.style.set_properties(**{
-                    'background-color': '#e6f7ff', /* Light blue table background */
+                    'background-color': '#ffffff', /* White table background */
                     'color': '#333333', /* Dark gray table text */
                     'border-color': '#cccccc'
                 }))
