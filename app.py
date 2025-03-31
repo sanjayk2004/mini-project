@@ -104,9 +104,9 @@ def main():
 
     # Create input fields for release_date, artist, and genre
     st.subheader("Enter Your Preferences")
-    release_date = st.text_input("Release Date:", placeholder="e.g., 2020")
-    artist = st.text_input("Artist Name:", placeholder="e.g., Arijit Singh")
-    genre = st.text_input("Genre:", placeholder="e.g., Bollywood")
+    release_date = st.text_input("Release Date:")  # Removed placeholder
+    artist = st.text_input("Artist Name:")         # Removed placeholder
+    genre = st.text_input("Genre:")               # Removed placeholder
 
     # Button to get recommendations
     if st.button("Get Recommendations"):
