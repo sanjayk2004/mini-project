@@ -82,20 +82,20 @@ def main():
         """
         <style>
         .stApp {
-            background: linear-gradient(to bottom, #6a11cb, #2575fc);
-            color: white;
+            background: #f0f8ff; /* Light blue background */
+            color: #333333; /* Dark gray text */
         }
         h1 {
             font-family: 'Poppins', sans-serif;
             text-align: center;
-            color: white;
+            color: #333333; /* Dark gray heading */
         }
         .sidebar .sidebar-content {
-            background: #2575fc;
-            color: white;
+            background: #e6f7ff; /* Lighter blue for sidebar */
+            color: #333333; /* Dark gray text */
         }
         .stButton>button {
-            background-color: #ff9900;
+            background-color: #ff9900; /* Orange button */
             color: white;
             border: none;
             padding: 10px 20px;
@@ -104,10 +104,15 @@ def main():
         }
         /* Change table header and row number colors */
         th {
-            color: white !important;
+            color: #333333 !important; /* Dark gray table headers */
         }
         td {
-            color: white !important;
+            color: #333333 !important; /* Dark gray table data */
+        }
+        /* Style for the GitHub link */
+        a {
+            color: #333333 !important; /* Dark gray link */
+            text-decoration: none;
         }
         </style>
         """,
@@ -131,21 +136,6 @@ def main():
         artist = st.text_input("Artist Name:")
         genre = st.text_input("Genre:")
 
-        # Dark mode toggle
-        dark_mode = st.checkbox("Dark Mode")
-        if dark_mode:
-            st.markdown(
-                """
-                <style>
-                .stApp {
-                    background: #121212;
-                    color: white;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
-
         # Submit button with "Enter" key support
         submit_button = st.form_submit_button(label="Get Recommendations")
 
@@ -160,8 +150,8 @@ def main():
             st.subheader("🎶 Recommendations")
             if isinstance(recommendations, pd.DataFrame):
                 st.table(recommendations.style.set_properties(**{
-                    'background-color': '#2575fc',
-                    'color': 'white',
+                    'background-color': '#e6f7ff', /* Light blue table background */
+                    'color': '#333333', /* Dark gray table text */
                     'border-color': '#cccccc'
                 }))
             else:
