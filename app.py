@@ -102,6 +102,13 @@ def main():
             font-size: 16px;
             border-radius: 5px;
         }
+        /* Change table header and row number colors */
+        th {
+            color: white !important;
+        }
+        td {
+            color: white !important;
+        }
         </style>
         """,
         unsafe_allow_html=True
@@ -119,27 +126,31 @@ def main():
 
     # Sidebar for inputs
     st.sidebar.subheader("🎵 Enter Your Preferences")
-    release_date = st.sidebar.text_input("Release Date:")
-    artist = st.sidebar.text_input("Artist Name:")
-    genre = st.sidebar.text_input("Genre:")
+    with st.sidebar.form(key="recommendation_form"):
+        release_date = st.text_input("Release Date:")
+        artist = st.text_input("Artist Name:")
+        genre = st.text_input("Genre:")
 
-    # Dark mode toggle
-    dark_mode = st.sidebar.checkbox("Dark Mode")
-    if dark_mode:
-        st.markdown(
-            """
-            <style>
-            .stApp {
-                background: #121212;
-                color: white;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+        # Dark mode toggle
+        dark_mode = st.checkbox("Dark Mode")
+        if dark_mode:
+            st.markdown(
+                """
+                <style>
+                .stApp {
+                    background: #121212;
+                    color: white;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
 
-    # Button to get recommendations
-    if st.sidebar.button("Get Recommendations"):
+        # Submit button with "Enter" key support
+        submit_button = st.form_submit_button(label="Get Recommendations")
+
+    # Process recommendations when the form is submitted
+    if submit_button:
         if not (release_date or artist or genre):
             st.warning("Please enter at least one filter (Release Date, Artist, or Genre).")
         else:
@@ -149,8 +160,8 @@ def main():
             st.subheader("🎶 Recommendations")
             if isinstance(recommendations, pd.DataFrame):
                 st.table(recommendations.style.set_properties(**{
-                    'background-color': '#f0f0f0',
-                    'color': 'black',
+                    'background-color': '#2575fc',
+                    'color': 'white',
                     'border-color': '#cccccc'
                 }))
             else:
@@ -160,7 +171,7 @@ def main():
     with st.expander("ℹ️ How to Use This App"):
         st.write("""
         1. Enter your preferences in the sidebar (e.g., Release Date, Artist, Genre).
-        2. Click the "Get Recommendations" button.
+        2. Press "Get Recommendations" or hit the "Enter" key.
         3. View up to 100 song recommendations based on your inputs.
         """)
 
@@ -173,17 +184,6 @@ def main():
         - Malayalam_songs.csv
         - Tamil_songs.csv
         """)
-
-    # Add a footer
-    st.markdown(
-        """
-        <div style="text-align: center; margin-top: 50px; font-size: 14px; color: #ffffff;">
-            Made with ❤️ by Sanjay K<br>
-            <a href="https://github.com/sanjayk2004/mini-project" target="_blank">View Source Code on GitHub</a>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
 # Run the Streamlit app
 if __name__ == "__main__":
