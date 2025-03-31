@@ -10,15 +10,20 @@ def load_data():
             "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/tcc_ceds_music.csv",
             "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/Hindi_songs.csv",
             "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/Malayalam_songs.csv",
-            "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/Tamil_songs.csv",
-         
+            "https://raw.githubusercontent.com/sanjayk2004/mini-project/main/Tamil_songs.csv"
         ]
 
         # Load each dataset and combine them
         combined_data = pd.DataFrame()  # Empty DataFrame to hold combined data
-        for url in dataset_urls:
-            data = pd.read_csv(url)
-            combined_data = pd.concat([combined_data, data], ignore_index=True)
+        for i, url in enumerate(dataset_urls):
+            try:
+                st.write(f"Loading dataset {i + 1}...")
+                data = pd.read_csv(url)
+                combined_data = pd.concat([combined_data, data], ignore_index=True)
+                st.write(f"Successfully loaded dataset {i + 1}.")
+            except Exception as e:
+                st.error(f"Failed to load dataset {i + 1}: {e}")
+                continue
 
         return combined_data
     except Exception as e:
@@ -27,6 +32,10 @@ def load_data():
 
 # Function to filter and recommend music
 def recommend_music(release_date, artist, genre, data):
+    if data is None:
+        st.error("No data available to process recommendations.")
+        return "No data available."
+
     # Start with the dataset
     filtered_data = data.copy()
 
@@ -35,7 +44,7 @@ def recommend_music(release_date, artist, genre, data):
         try:
             filtered_data = filtered_data[filtered_data['release_date'] == int(release_date)]
         except (KeyError, ValueError):
-            pass  # Ignore invalid or missing 'release_date' column/inputs
+            st.warning("Invalid or missing 'release_date' column/inputs.")
 
     # Filter by artist if the 'artist_name' column exists
     if artist and 'artist_name' in filtered_data.columns:
@@ -87,6 +96,10 @@ def main():
 
     # Initialize global variable for the dataset
     data = load_data()
+
+    if data is None:
+        st.error("Failed to load datasets. Please check the logs for more details.")
+        return
 
     # Create input fields for release_date, artist, and genre
     st.subheader("Enter Your Preferences")
