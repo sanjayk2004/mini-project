@@ -150,8 +150,8 @@ def main():
             st.subheader("🎶 Recommendations")
             if isinstance(recommendations, pd.DataFrame):
                 st.table(recommendations.style.set_properties(**{
-                    'background-color': '#ffffff', /* White table background */
-                    'color': '#333333', /* Dark gray table text */
+                    'background-color': '#ffffff',  # White table background
+                    'color': '#333333',             # Dark gray table text
                     'border-color': '#cccccc'
                 }))
             else:
