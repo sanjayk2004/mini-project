@@ -32,7 +32,7 @@ def load_data():
         return None
 
 # Function to filter and recommend music
-def recommend_music(release_date, artist, genre, data):
+def recommend_music(release_date, artist, genre, data, num_recommendations=10):
     if data is None:
         st.error("No data available to process recommendations.")
         return "No data available."
@@ -57,13 +57,13 @@ def recommend_music(release_date, artist, genre, data):
         filtered_data['genre'] = filtered_data['genre'].astype(str)
         filtered_data = filtered_data[filtered_data['genre'].str.contains(genre, case=False, na=False)]
 
-    # Return top 10 recommendations or a message if no results found
+    # Return top N recommendations or a message if no results found
     if filtered_data.empty:
         return "No recommendations found for the given inputs."
 
     # Return the filtered data with specified columns (only if they exist)
     available_columns = [col for col in ['track_name', 'artist_name', 'genre', 'release_date'] if col in filtered_data.columns]
-    return filtered_data[available_columns].head(10)
+    return filtered_data[available_columns].head(num_recommendations)
 
 # Streamlit App
 def main():
@@ -104,16 +104,25 @@ def main():
 
     # Create input fields for release_date, artist, and genre
     st.subheader("Enter Your Preferences")
-    release_date = st.text_input("Release Date:")  # Removed placeholder
-    artist = st.text_input("Artist Name:")         # Removed placeholder
-    genre = st.text_input("Genre:")               # Removed placeholder
+    release_date = st.text_input("Release Date:")
+    artist = st.text_input("Artist Name:")
+    genre = st.text_input("Genre:")
+
+    # Allow users to specify the number of recommendations
+    num_recommendations = st.number_input(
+        "Number of Recommendations", 
+        min_value=1, 
+        max_value=100, 
+        value=10,  # Default value
+        step=1
+    )
 
     # Button to get recommendations
     if st.button("Get Recommendations"):
         if not (release_date or artist or genre):
             st.warning("Please enter at least one filter (Release Date, Artist, or Genre).")
         else:
-            recommendations = recommend_music(release_date, artist, genre, data)
+            recommendations = recommend_music(release_date, artist, genre, data, num_recommendations)
 
             # Display the recommendations
             st.subheader("Recommendations")
