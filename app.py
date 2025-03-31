@@ -19,10 +19,11 @@ def load_data():
             try:
                 st.write(f"Loading dataset {i + 1}...")
                 data = pd.read_csv(url)
-                combined_data = pd.concat([combined_data, data], ignore_index=True)
                 st.write(f"Successfully loaded dataset {i + 1}.")
+                combined_data = pd.concat([combined_data, data], ignore_index=True)
             except Exception as e:
-                st.error(f"Failed to load dataset {i + 1}: {e}")
+                st.error(f"Failed to load dataset {i + 1}: {url}")
+                st.error(f"Error details: {e}")
                 continue
 
         return combined_data
