@@ -102,14 +102,6 @@ def main():
             font-size: 16px;
             border-radius: 5px;
         }
-        /* Change table header and row number colors */
-        th {
-            background-color: #87CEEB !important; /* Match header background to app background */
-            color: #ffffff !important; /* White column names */
-        }
-        td {
-            color: #333333 !important; /* Dark gray table data */
-        }
         /* Style for the GitHub link */
         a {
             color: #333333 !important; /* Dark gray link */
@@ -150,11 +142,26 @@ def main():
             # Display the recommendations in the main area
             st.subheader("🎶 Recommendations")
             if isinstance(recommendations, pd.DataFrame):
-                st.table(recommendations.style.set_properties(**{
-                    'background-color': '#ffffff',  # White table background
-                    'color': '#333333',             # Dark gray table text
-                    'border-color': '#cccccc'
-                }))
+                # Apply custom styling to the table
+                styled_table = (
+                    recommendations.style
+                    .set_properties(**{
+                        'background-color': '#ffffff',  # White table background
+                        'color': '#333333',             # Dark gray table text
+                        'border-color': '#cccccc'
+                    })
+                    .set_table_styles([
+                        {
+                            'selector': 'th',
+                            'props': [('background-color', '#87CEEB'), ('color', 'white')]  # White column names
+                        },
+                        {
+                            'selector': 'td',
+                            'props': [('color', '#333333')]  # Dark gray table data
+                        }
+                    ])
+                )
+                st.table(styled_table)
             else:
                 st.info(recommendations)
 
