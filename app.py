@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from time import sleep
-
+ 
 
 @st.cache_data 
 def load_data():
