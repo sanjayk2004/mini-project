@@ -3,7 +3,7 @@ import pandas as pd
 from time import sleep
  
 
-@st.cache_data 
+@st.cache_data  
 def load_data():
     try:
         dataset_urls = [
